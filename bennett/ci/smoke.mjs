@@ -35,11 +35,13 @@ function skip(name, reason) {
   results.push({ name, ok: true, skipped: reason });
   console.log(`skip ${name} — ${reason}`);
 }
+const openPages = [];
 async function step(name, body) {
   try {
     return await body();
   } catch (error) {
-    check(name, false, error.message);
+    check(name, false, error.message.split('\n')[0]);
+    for (const [label, page] of openPages) await screenshot(page, `failed-${label}`);
     return undefined;
   }
 }
@@ -313,7 +315,10 @@ async function completeForm(page, label) {
 // =============================================================================
 const started = Date.now();
 const browser = await chromium.launch({ args: [`--host-resolver-rules=MAP ${SIGN} 127.0.0.1, MAP ${run.apiHost} 127.0.0.1, MAP ${run.staffHost} 127.0.0.1`] });
-const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1280, height: 900 }, locale: 'en-US' });
+// One browser per signer, as in life: DocuSeal keeps a single verification cookie per browser.
+const signerContext = () => browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1280, height: 900 }, locale: 'en-US' });
+const clientContext = await signerContext();
+const attorneyContext = await signerContext();
 try {
   // 1. What the gateway serves and refuses (production path only).
   for (const asset of ['/packs/bennett-signing-v1.css', '/packs/bennett-signing-v1.js', '/packs/bennett-legal-logo-white.png',
@@ -418,8 +423,9 @@ try {
 
   // 5. Recipient order (Bennett patch): the attorney passes the email code,
   //    then may not change the submission before the client finishes.
-  const attorneyPage = await context.newPage();
+  const attorneyPage = await attorneyContext.newPage();
   const attorneySeen = watch(attorneyPage);
+  openPages.push(['attorney', attorneyPage]);
   await step('attorney cannot sign before the client', async () => {
     await attorneyPage.goto(`https://${SIGN}/s/${attorneyCreated.slug}`, { waitUntil: 'load' });
     await passEmailCode(attorneyPage, snapshot.recipients[1].email, 'attorney-early');
@@ -443,8 +449,9 @@ try {
   });
 
   // 6. Invite and sign as the client (Spanish from the signer's metadata).
-  const clientPage = await context.newPage();
+  const clientPage = await clientContext.newPage();
   const clientSeen = watch(clientPage);
+  openPages.push(['client', clientPage]);
   await step('client signs', async () => {
     const since = Date.now();
     await jud.invite(clientCreated.id);
@@ -473,7 +480,7 @@ try {
       skip('signer page security headers', 'no gateway image (direct mode)');
     }
     await passEmailCode(clientPage, snapshot.recipients[0].email, 'client');
-    const cookies = await context.cookies(`https://${SIGN}`);
+    const cookies = await clientContext.cookies(`https://${SIGN}`);
     check('signer cookies are Secure', cookies.length > 0 && cookies.every(c => c.secure), cookies.map(c => [c.name.slice(0, 16), c.secure, c.httpOnly]));
     await completeForm(clientPage, 'client');
     const after = await until(async () => {
@@ -494,8 +501,12 @@ try {
     const since = Date.now();
     await jud.invite(attorneyCreated.id);
     const invitation = await mail(snapshot.recipients[1].email, /listo para firmar|ready to sign/i, since);
+    check('attorney invitation links the signing host and this signer', signerLink(invitation) === `https://${SIGN}/s/${attorneyCreated.slug}`);
     await attorneyPage.goto(signerLink(invitation), { waitUntil: 'load' });
-    if (await attorneyPage.locator('input[name="one_time_code"]').count()) await passEmailCode(attorneyPage, snapshot.recipients[1].email, 'attorney');
+    // The code the attorney entered earlier still holds in this browser.
+    const asked = await attorneyPage.locator('button, input[type=submit]').filter({ hasText: /verification code|código|codigo/i }).first().isVisible().catch(() => false);
+    check('attorney is not asked for a second code in the same browser', !asked);
+    if (asked) await passEmailCode(attorneyPage, snapshot.recipients[1].email, 'attorney');
     await completeForm(attorneyPage, 'attorney');
   });
   check('signer pages had no CSP violations, script errors or refused requests',

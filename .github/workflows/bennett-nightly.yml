@@ -20,6 +20,10 @@ on:
         description: Publish even if this commit already has a verified image this week
         type: boolean
         default: false
+      export_image:
+        description: Attach the tested image to the run for one day (public source only)
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -110,6 +114,7 @@ jobs:
           echo "VERSION=$BASE_TAG+bennett.$SHORT" >> "$GITHUB_ENV"
 
       - name: Build (upstream Dockerfile, then bennett/Dockerfile.bennett)
+        id: build
         uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
         with:
           source: .
@@ -168,6 +173,19 @@ jobs:
             ${{ runner.temp }}/scan/trivy.txt
           retention-days: 14
           if-no-files-found: ignore
+
+      - name: Attach the tested image
+        if: always() && inputs.export_image && steps.build.outcome == 'success'
+        run: docker save "$IMAGE" | gzip -1 > "$RUNNER_TEMP/image.tar.gz"
+
+      - name: Upload the tested image
+        if: always() && inputs.export_image && steps.build.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-${{ github.run_id }}
+          path: ${{ runner.temp }}/image.tar.gz
+          retention-days: 1
+          compression-level: 0
 
       - name: Decide whether to publish
         id: plan

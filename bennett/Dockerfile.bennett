@@ -9,7 +9,9 @@ FROM upstream
 
 # Take current Alpine security fixes for everything installed. The nightly
 # build scans the result and refuses CRITICAL findings before publishing.
-RUN apk upgrade --no-cache
+# Create the folders first: COPY --chmod would give new folders the files'
+# 0644, which the runtime user (uid 2000) cannot enter.
+RUN apk upgrade --no-cache && install -d -m 0755 /opt/docuseal /etc/docuseal
 
 # Public AWS RDS trust anchors (ca-provenance.json), not a private key.
 COPY --chmod=0644 rds-global-bundle.pem /etc/docuseal/rds-global-bundle.pem

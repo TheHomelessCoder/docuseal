@@ -1,0 +1,157 @@
+{
+  "name": "CI retainer (synthetic)",
+  "fields": [
+    {
+      "uuid": "field:0",
+      "submitter_uuid": "role:0",
+      "name": "FullName",
+      "type": "text",
+      "required": true,
+      "preferences": {},
+      "areas": [
+        {
+          "attachment_uuid": "document:0",
+          "page": 0,
+          "x": 0.1,
+          "y": 0.2,
+          "w": 0.3,
+          "h": 0.04
+        }
+      ]
+    },
+    {
+      "uuid": "field:1",
+      "submitter_uuid": "role:0",
+      "name": "attorney_fee",
+      "type": "text",
+      "required": true,
+      "preferences": {},
+      "areas": [
+        {
+          "attachment_uuid": "document:0",
+          "page": 0,
+          "x": 0.1,
+          "y": 0.3,
+          "w": 0.3,
+          "h": 0.04
+        }
+      ]
+    },
+    {
+      "uuid": "field:2",
+      "submitter_uuid": "role:0",
+      "name": "Consent",
+      "type": "checkbox",
+      "required": true,
+      "preferences": {},
+      "areas": [
+        {
+          "attachment_uuid": "document:0",
+          "page": 1,
+          "x": 0.1,
+          "y": 0.2,
+          "w": 0.03,
+          "h": 0.03
+        }
+      ]
+    },
+    {
+      "uuid": "field:3",
+      "submitter_uuid": "role:0",
+      "name": "Signature",
+      "type": "signature",
+      "required": true,
+      "preferences": {},
+      "areas": [
+        {
+          "attachment_uuid": "document:0",
+          "page": 1,
+          "x": 0.1,
+          "y": 0.3,
+          "w": 0.35,
+          "h": 0.08
+        }
+      ]
+    },
+    {
+      "uuid": "field:4",
+      "submitter_uuid": "role:0",
+      "name": "DateSigned",
+      "type": "date",
+      "required": true,
+      "preferences": {},
+      "areas": [
+        {
+          "attachment_uuid": "document:0",
+          "page": 1,
+          "x": 0.55,
+          "y": 0.33,
+          "w": 0.3,
+          "h": 0.04
+        }
+      ]
+    },
+    {
+      "uuid": "field:5",
+      "submitter_uuid": "role:1",
+      "name": "AttorneySignature",
+      "type": "signature",
+      "required": true,
+      "preferences": {},
+      "areas": [
+        {
+          "attachment_uuid": "document:0",
+          "page": 1,
+          "x": 0.1,
+          "y": 0.6,
+          "w": 0.35,
+          "h": 0.08
+        }
+      ]
+    },
+    {
+      "uuid": "field:6",
+      "submitter_uuid": "role:1",
+      "name": "AttorneyDate",
+      "type": "date",
+      "required": true,
+      "preferences": {},
+      "areas": [
+        {
+          "attachment_uuid": "document:0",
+          "page": 1,
+          "x": 0.55,
+          "y": 0.63,
+          "w": 0.3,
+          "h": 0.04
+        }
+      ]
+    }
+  ],
+  "submitters": [
+    {
+      "name": "Client",
+      "uuid": "role:0"
+    },
+    {
+      "name": "Attorney",
+      "uuid": "role:1"
+    }
+  ],
+  "schema": [
+    {
+      "attachment_uuid": "document:0",
+      "name": "ci-retainer"
+    }
+  ],
+  "preferences": {
+    "submitters_order": "preserved"
+  },
+  "variables_schema": {},
+  "documents": [
+    {
+      "filename": "ci-retainer.pdf",
+      "sha256": "pinned-document"
+    }
+  ]
+}
