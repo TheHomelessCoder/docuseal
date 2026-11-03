@@ -33,7 +33,7 @@ class SubmitterMailer < ApplicationMailer
 
     maybe_set_custom_domain(@submitter)
 
-    I18n.with_locale(@current_account.locale) do
+    I18n.with_locale(bennett_signer_locale(@submitter) || @current_account.locale) do
       subject = build_invite_subject(@subject, @email_config, submitter)
 
       mail(
@@ -72,7 +72,7 @@ class SubmitterMailer < ApplicationMailer
 
     maybe_set_custom_domain(@submitter)
 
-    I18n.with_locale(@current_account.locale) do
+    I18n.with_locale(bennett_signer_locale(@submitter) || @current_account.locale) do
       subject = build_invite_subject(@subject, @email_config, submitter)
 
       mail(
@@ -167,9 +167,13 @@ class SubmitterMailer < ApplicationMailer
 
     maybe_set_custom_domain(@submitter)
 
-    I18n.with_locale(@current_account.locale) do
+    I18n.with_locale(bennett_signer_locale(@submitter) || @current_account.locale) do
       subject =
-        @subject.present? ? ReplaceEmailVariables.call(@subject, submitter:) : I18n.t(:your_document_copy)
+        if @subject.present?
+          ReplaceEmailVariables.call(@subject, submitter:)
+        else
+          I18n.locale.to_s.start_with?('es') ? 'Su contrato firmado de Bennett Legal' : 'Your signed Bennett Legal agreement'
+        end
 
       mail(from: from_address_for_submitter(submitter),
            to: to || @submitter.friendly_name,
@@ -194,8 +198,9 @@ class SubmitterMailer < ApplicationMailer
         default_params[:from]
       end
 
-    I18n.with_locale(locale || submitter.account.locale) do
-      mail(to: submitter.email, from:, subject: I18n.t('email_verification'))
+    I18n.with_locale(locale || bennett_signer_locale(submitter) || submitter.account.locale) do
+      subject = I18n.locale.to_s.start_with?('es') ? 'Su código de verificación de Bennett Legal' : 'Your Bennett Legal verification code'
+      mail(to: submitter.email, from:, subject:)
     end
   end
 
@@ -257,9 +262,17 @@ class SubmitterMailer < ApplicationMailer
     user.role == 'integration' ? user.friendly_name.sub(/\+\w+@/, '@') : user.friendly_name
   end
 
+  # Bennett Legal: emails to a signer use the language JUD recorded for them.
+  def bennett_signer_locale(submitter)
+    lang = submitter&.metadata&.dig('lang').to_s
+    lang if lang.present? && I18n.locale_available?(lang)
+  end
+
   def build_invite_subject(subject, email_config, submitter)
     if email_config || subject
       ReplaceEmailVariables.call(subject || email_config.value['subject'], submitter:)
+    elsif submitter.with_signature_fields? && !submitter.viewer?
+      I18n.locale.to_s.start_with?('es') ? 'Su contrato de Bennett Legal está listo para firmar' : 'Your Bennett Legal retainer is ready to sign'
     elsif submitter.viewer?
       I18n.t(:you_are_invited_to_view_a_document)
     elsif submitter.with_signature_fields?

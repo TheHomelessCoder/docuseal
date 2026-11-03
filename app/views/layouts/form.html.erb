@@ -1,7 +1,16 @@
 <!DOCTYPE html>
 <html data-theme="docuseal" lang="<%= I18n.locale %>">
   <head>
-    <%= render 'layouts/head_tags' %>
+    <%# Signer pages carry Bennett Legal identity; capability links are never indexed or previewed. %>
+    <% document_title = content_for(:html_title).to_s.delete_suffix(" | #{Docuseal.product_name}").presence %>
+    <title><%= [document_title, 'Bennett Legal'].compact.join(' | ') %></title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/png" sizes="32x32" href="/packs/bennett-icon-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/packs/bennett-icon-180.png">
+    <% if turbo_native_app? %>
+      <meta name="turbo-cache-control" content="no-preview">
+      <%= render 'layouts/native_styles' %>
+    <% end %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <%= csrf_meta_tags %>
     <% if ENV['ROLLBAR_CLIENT_TOKEN'] %>
@@ -11,8 +20,10 @@
       <%= javascript_pack_tag 'form', defer: true %>
     <% end %>
     <%= stylesheet_pack_tag 'form', media: 'all', data: { turbo_track: 'dynamic' } %>
+    <link rel="stylesheet" href="/packs/bennett-signing-v1.css?v=20261103g" media="all">
+    <script src="/packs/bennett-signing-v1.js?v=20261103g" defer></script>
   </head>
-  <body>
+  <body class="bennett-signer">
     <main>
       <%= yield %>
     </main>

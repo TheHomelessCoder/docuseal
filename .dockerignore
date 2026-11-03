@@ -24,7 +24,8 @@
 
 /config/master.key
 /public/packs-test
-/public/packs
+/public/packs/*
+!/public/packs/bennett-*
 /attachments
 /docuseal
 .DS_Store

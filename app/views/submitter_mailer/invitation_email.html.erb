@@ -4,11 +4,16 @@
     <p><%= link_to nil, submit_form_url(slug: @submitter.slug, t: SubmissionEvents.build_tracking_param(@submitter, 'click_email'), host: @custom_domain || ENV.fetch('EMAIL_HOST', Docuseal.default_url_options[:host])) %></p>
   <% end %>
 <% else %>
-  <p><%= t('hi_there') %>,</p>
-  <p><%= I18n.t(@submitter.with_signature_fields? ? :you_have_been_invited_to_sign_the_name : :you_have_been_invited_to_submit_the_name_form, name: @submitter.submission.name || @submitter.submission.template&.name) %></p>
-  <p><%= link_to I18n.t(@submitter.with_signature_fields? ? :review_and_sign : :review_and_submit), submit_form_url(slug: @submitter.slug, t: SubmissionEvents.build_tracking_param(@submitter, 'click_email'), host: @custom_domain || ENV.fetch('EMAIL_HOST', Docuseal.default_url_options[:host])) %></p>
-  <p><%= t('please_contact_us_by_replying_to_this_email_if_you_have_any_questions') %></p>
-  <p>
-  <%= t('thanks') %>,<br><%= @current_account.name %>
-  </p>
+  <%# Bennett Legal invitation, in the signer's language. %>
+  <% es = I18n.locale.to_s.start_with?('es') %>
+  <% sign_url = submit_form_url(slug: @submitter.slug, t: SubmissionEvents.build_tracking_param(@submitter, 'click_email'), host: @custom_domain || ENV.fetch('EMAIL_HOST', Docuseal.default_url_options[:host])) %>
+  <% with_code = @submitter.preferences['require_email_2fa'] || @submitter.submission.template&.preferences&.dig('require_email_2fa') %>
+  <p style="margin:0 0 16px;font-size:22px;font-family:Georgia,serif;"><%= es ? "Hola #{@submitter.name}," : "Hello #{@submitter.name}," %></p>
+  <p style="margin:0 0 12px;"><%= es ? 'Su contrato con Bennett Legal está listo. Revisarlo y firmarlo toma unos minutos desde su teléfono o computadora.' : 'Your retainer agreement with Bennett Legal is ready. It takes just a few minutes to review and sign on your phone or computer.' %></p>
+  <%= render 'bennett_button', url: sign_url, label: es ? 'Revisar y firmar' : 'Review and sign' %>
+  <% if with_code %>
+    <p style="margin:0 0 12px;"><%= es ? 'Por su seguridad, al abrir el enlace le enviaremos un código de 6 dígitos a este correo.' : 'For your security, when you open the link we will email you a 6-digit code.' %></p>
+  <% end %>
+  <p style="margin:0 0 12px;"><%= es ? '¿Preguntas? Llámenos al (972) 972-4969 o responda a este correo.' : 'Questions? Call us at (972) 972-4969 or reply to this email.' %></p>
+  <p style="margin:0;">Bennett Legal</p>
 <% end %>

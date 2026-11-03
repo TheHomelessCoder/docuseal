@@ -1,3 +1,5 @@
-<p><%= t('your_verification_code_to_access_the_name', name: @submitter.submission.name || @submitter.submission.template&.name) %></p>
-<p><b><%= @otp_code %></b></p>
-<p><%= t('please_reply_to_this_email_if_you_didnt_request_this') %></p>
+<%# Bennett Legal verification code, in the signer's language. %>
+<% es = I18n.locale.to_s.start_with?('es') %>
+<p style="margin:0 0 12px;"><%= es ? 'Su código de verificación para abrir su contrato de Bennett Legal es:' : 'Your verification code to open your Bennett Legal agreement is:' %></p>
+<p style="margin:0 0 20px;font:700 36px/1.2 Arial,Helvetica,sans-serif;letter-spacing:6px;color:#0b1120;"><%= @otp_code %></p>
+<p style="margin:0 0 12px;"><%= es ? 'Escriba este código en la página de firma. Si usted no lo pidió, puede ignorar este correo.' : 'Type this code on the signing page. If you did not ask for it, you can ignore this email.' %></p>

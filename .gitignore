@@ -23,6 +23,9 @@
 /config/master.key
 
 /public/packs
+!/public/packs/
+/public/packs/*
+!/public/packs/bennett-*
 /public/packs-test
 /node_modules
 /yarn-error.log

@@ -3,10 +3,36 @@
   <head>
     <title></title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style></style>
   </head>
-  <body dir="<%= TextUtils.rtl?(yield) ? 'rtl' : 'auto' %>">
-    <%= yield %>
-    <%= render partial: 'shared/mailer_attribution' %>
+  <%# Bennett Legal email frame: navy header with the firm logo, a white card and large type. %>
+  <% url = Docuseal.default_url_options %>
+  <% asset_origin = "#{url[:protocol] || 'https'}://#{ENV.fetch('EMAIL_HOST', url[:host])}#{":#{url[:port]}" if url[:port] && ENV['EMAIL_HOST'].blank?}" %>
+  <body dir="<%= TextUtils.rtl?(yield) ? 'rtl' : 'auto' %>" style="margin:0;padding:0;background:#eef1f5;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f5;">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+            <tr>
+              <td style="background:#0b1120;border-bottom:4px solid #f5b324;border-radius:12px 12px 0 0;padding:18px 28px;">
+                <img src="<%= asset_origin %>/packs/bennett-legal-logo-white.png" width="140" height="60" alt="Bennett Legal" style="display:block;border:0;width:140px;height:auto;color:#ffffff;font:700 22px Georgia,serif;">
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#ffffff;border-radius:0 0 12px 12px;padding:28px;color:#0f172a;font:17px/1.6 Arial,Helvetica,sans-serif;">
+                <%= yield %>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 8px;color:#6b7280;font:13px/1.5 Arial,Helvetica,sans-serif;text-align:center;">
+                Bennett Legal · 12770 Coit Rd., Ste 720, Dallas, TX 75251 · (972) 972-4969
+                <%= render partial: 'shared/mailer_attribution' %>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

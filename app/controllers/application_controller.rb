@@ -99,10 +99,20 @@ class ApplicationController < ActionController::Base
     I18n.with_locale(locale, &)
   end
 
+  def bennett_signer_locale
+    slug = params[:submitter_slug].presence || params[:slug].presence
+    return if slug.blank?
+
+    Submitter.find_by(slug:)&.metadata&.dig('lang').to_s.presence
+  end
+
   def with_browser_locale(&)
     return yield if I18n.locale != :'en-US' && I18n.locale != :en
 
     locale   = params[:lang].presence
+    # Bennett Legal: a signer's own language, set by JUD at issuance, wins over
+    # the browser so Spanish clients see Spanish without a ?lang= link.
+    locale ||= bennett_signer_locale
     locale ||= request.env['HTTP_ACCEPT_LANGUAGE'].to_s[BROWSER_LOCALE_REGEXP].to_s
 
     locale =
