@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# Modified by Bennett Legal on 2026-11-01: enforce upstream recipient-order authorization before mutations.
 
 class SubmitFormController < ApplicationController
   layout 'form'
@@ -50,7 +51,7 @@ class SubmitFormController < ApplicationController
   end
 
   def update
-    unless Submitters::AuthorizedForForm.call(@submitter, current_user, request)
+    unless Submitters::AuthorizedForForm.call(@submitter, current_user, request, with_order: true)
       return render json: { error: I18n.t('verification_required_refresh_the_page_and_pass_2fa') },
                     status: :unprocessable_content
     end

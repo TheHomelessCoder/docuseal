@@ -1,6 +1,8 @@
 # frozen_string_literal: true
+# Modified by Bennett Legal on 2026-11-01: enforce upstream recipient-order authorization before mutations.
 
 class SubmitFormPrefillAttachmentsController < ActionController::API
+  include ActionController::Cookies
   include ActiveStorage::SetCurrent
 
   def create
@@ -8,6 +10,11 @@ class SubmitFormPrefillAttachmentsController < ActionController::API
 
     unless can_upload?(@submitter)
       return render json: { error: I18n.t('form_has_been_archived') }, status: :unprocessable_content
+    end
+
+    unless Submitters::AuthorizedForForm.call(@submitter, current_user, request, with_order: true)
+      return render json: { error: I18n.t('verification_required_refresh_the_page_and_pass_2fa') },
+                    status: :unprocessable_content
     end
 
     uuid, slug = ApplicationRecord.signed_id_verifier.verify(params[:prefill_token], purpose: :prefill_attachment)
@@ -24,7 +31,8 @@ class SubmitFormPrefillAttachmentsController < ActionController::API
   private
 
   def can_upload?(submitter)
-    !submitter.declined_at? &&
+    !submitter.viewer? &&
+      !submitter.declined_at? &&
       !submitter.completed_at? &&
       !submitter.submission.archived_at? &&
       !submitter.submission.expired? &&

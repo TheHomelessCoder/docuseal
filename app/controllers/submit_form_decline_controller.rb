@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# Modified by Bennett Legal on 2026-11-01: enforce upstream recipient-order authorization before mutations.
 
 class SubmitFormDeclineController < ApplicationController
   skip_before_action :authenticate_user!
@@ -16,7 +17,8 @@ class SubmitFormDeclineController < ApplicationController
                                                             @submitter.viewer? ||
                                                             !Submitters::AuthorizedForForm.call(@submitter,
                                                                                                 current_user,
-                                                                                                request)
+                                                                                                request,
+                                                                                                with_order: true)
 
     ApplicationRecord.transaction do
       @submitter.update!(declined_at: Time.current, values: @submitter.preferences['default_values'] || {})

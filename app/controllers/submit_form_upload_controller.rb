@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# Modified by Bennett Legal on 2026-11-01: enforce upstream recipient-order authorization before mutations.
 
 class SubmitFormUploadController < ActionController::API
   include ActionController::Cookies
@@ -55,14 +56,15 @@ class SubmitFormUploadController < ActionController::API
       return render json: { error: I18n.t('form_has_been_archived') }, status: :unprocessable_content
     end
 
-    return if Submitters::AuthorizedForForm.call(@submitter, current_user, request)
+    return if Submitters::AuthorizedForForm.call(@submitter, current_user, request, with_order: true)
 
     render json: { error: I18n.t('verification_required_refresh_the_page_and_pass_2fa') },
            status: :unprocessable_content
   end
 
   def can_upload?(submitter)
-    !submitter.declined_at? &&
+    !submitter.viewer? &&
+      !submitter.declined_at? &&
       !submitter.completed_at? &&
       !submitter.submission.archived_at? &&
       !submitter.submission.expired? &&

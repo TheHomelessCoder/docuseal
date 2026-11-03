@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# Modified by Bennett Legal on 2026-11-01: enforce upstream recipient-order authorization before mutations.
 
 class SubmitFormInviteController < ApplicationController
   skip_before_action :authenticate_user!
@@ -49,7 +50,7 @@ class SubmitFormInviteController < ApplicationController
       !submitter.submission.expired? &&
       !submitter.submission.template&.archived_at? &&
       !submitter.viewer? &&
-      Submitters::AuthorizedForForm.call(submitter, current_user, request)
+      Submitters::AuthorizedForForm.call(submitter, current_user, request, with_order: true)
   end
 
   def filter_invite_submitters(submitter, key = 'invite_by_uuid')
