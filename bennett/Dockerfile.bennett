@@ -1,0 +1,35 @@
+# syntax=docker/dockerfile:1
+# Bennett Legal production image for retainer signing.
+#
+# The base is the output of DocuSeal's own Dockerfile, built unmodified from
+# this fork's source: bennett/docker-bake.hcl passes it in as the "upstream"
+# build context. This layer adds only the Bennett runtime pieces. Upstream
+# LICENSE and LICENSE_ADDITIONAL_TERMS stay at /app.
+FROM upstream
+
+# Take current Alpine security fixes for everything installed. The nightly
+# build scans the result and refuses CRITICAL findings before publishing.
+RUN apk upgrade --no-cache
+
+# Public AWS RDS trust anchors (ca-provenance.json), not a private key.
+COPY --chmod=0644 rds-global-bundle.pem /etc/docuseal/rds-global-bundle.pem
+RUN echo '90a6f1a7978a1b1b096dca6c57511ca48d3b8cf052f8e704baf358f34ea2f21b  /etc/docuseal/rds-global-bundle.pem' | sha256sum -c -
+COPY --chmod=0644 launch.rb puma.rb source_check.rb NOTICE.md /opt/docuseal/
+# Native page previews use direct signed S3 URLs, bypassing the gateway. Store
+# no-store metadata on every uploaded object, including preview/signature assets.
+COPY --chmod=0644 storage.yml /app/config/storage.yml
+# Never build an image in which a merge dropped a Bennett change.
+RUN ruby /opt/docuseal/source_check.rb /app
+
+# /app/tmp is a tmpfs in production; keep the boot cache on the data volume.
+ENV BOOTSNAP_CACHE_DIR=/data/docuseal/bootsnap
+ARG REVISION=unknown
+ARG VERSION=unknown
+LABEL org.opencontainers.image.title="Bennett Legal DocuSeal" \
+      org.opencontainers.image.source="https://github.com/TheHomelessCoder/docuseal" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.licenses="AGPL-3.0" \
+      com.bennettlegal.docuseal.build="fork/1"
+USER 2000:2000
+CMD ["ruby", "/opt/docuseal/launch.rb"]

@@ -1,0 +1,6 @@
+{
+  "url": "https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem",
+  "retrieved_utc": "2026-10-31",
+  "sha256": "90a6f1a7978a1b1b096dca6c57511ca48d3b8cf052f8e704baf358f34ea2f21b",
+  "rotation": "Review RDS CA expiry/rotation, replace bundle and rebuild/pin derivative image before rotation."
+}
