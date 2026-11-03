@@ -23,8 +23,8 @@ COPY --chmod=0644 storage.yml /app/config/storage.yml
 # Never build an image in which a merge dropped a Bennett change.
 RUN ruby /opt/docuseal/source_check.rb /app
 
-# /app/tmp is a tmpfs in production; keep the boot cache on the data volume.
-ENV BOOTSNAP_CACHE_DIR=/data/docuseal/bootsnap
+# The boot cache stays upstream's /app/tmp/cache, a tmpfs in production, so
+# it is never stale and never lands in the backed-up attachments volume.
 ARG REVISION=unknown
 ARG VERSION=unknown
 LABEL org.opencontainers.image.title="Bennett Legal DocuSeal" \
