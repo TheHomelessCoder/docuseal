@@ -1,0 +1,12 @@
+{
+  "name": "bennett-docuseal-smoke",
+  "private": true,
+  "description": "Nightly production-mode smoke test for the Bennett Legal DocuSeal image",
+  "license": "AGPL-3.0",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "pdf-lib": "1.17.1",
+    "playwright": "1.64.1"
+  }
+}

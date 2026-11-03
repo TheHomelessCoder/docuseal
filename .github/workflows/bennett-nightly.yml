@@ -1,0 +1,275 @@
+name: Bennett nightly
+
+# Every night: merge upstream DocuSeal master into bennett-legal (in a work
+# copy), run the Bennett tests, build the production image, smoke-test it in
+# production mode through the signing gateway, and scan it. Only when all of
+# that passes: push the merge to bennett-legal, push the image to ECR as
+# bl-<commit>, and tag it verified-<yyyymmdd>-<commit> in ECR and in git.
+# A merge conflict stops the run and opens (or updates) one issue.
+# See bennett/README.md.
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish when everything passes (merge, ECR image, verified tags)
+        type: boolean
+        default: true
+      force:
+        description: Publish even if this commit already has a verified image this week
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: bennett-nightly
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_URL: https://github.com/docusealco/docuseal.git
+  UPSTREAM_BRANCH: master
+  IMAGE: bennett-docuseal:ci
+  RUBY_IMAGE: library/ruby:4.0.9-alpine3.24@sha256:f1e530793cc09e1093417a4c9956069407155e1883d02beb30bda35ae54a47a3
+  TRIVY_IMAGE: aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+
+jobs:
+  verify:
+    name: Merge, test, build, smoke-test, scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    outputs:
+      before: ${{ steps.merge.outputs.before }}
+      commit: ${{ steps.merge.outputs.commit }}
+      short: ${{ steps.merge.outputs.short }}
+      publish: ${{ steps.plan.outputs.publish }}
+      tag: ${{ steps.plan.outputs.tag }}
+      digest: ${{ steps.push.outputs.digest }}
+    env:
+      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      GATEWAY_IMAGE: ${{ vars.GATEWAY_IMAGE }}
+      PUBLISH_REQUESTED: ${{ github.event_name == 'schedule' || inputs.publish }}
+      FORCE: ${{ inputs.force || false }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Merge upstream DocuSeal master (work copy only)
+        id: merge
+        run: bennett/ci/merge-upstream.sh
+
+      - name: Open or update the merge issue
+        if: failure() && steps.merge.outputs.conflict == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REASON: ${{ steps.merge.outputs.reason }}
+          FILES: ${{ steps.merge.outputs.files }}
+          UPSTREAM_SHORT: ${{ steps.merge.outputs.upstream_short }}
+          BASE_TAG: ${{ steps.merge.outputs.base_tag }}
+        run: bennett/ci/merge-issue.sh open
+
+      - name: Bennett tests (Ruby 4.0.9, as in the image)
+        run: |
+          docker run --rm -v "$PWD:/src:ro" -w /src "$RUBY_IMAGE" sh -c \
+            'apk add --no-cache git > /dev/null && git config --global --add safe.directory /src && ruby bennett/test/run.rb'
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install the smoke-test browser
+        working-directory: bennett/ci
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx --no-install playwright install --with-deps chromium
+
+      - name: Signer chrome in a browser (synthetic pages)
+        run: node bennett/test/branding_layout.test.cjs
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Write the version file
+        env:
+          BASE_TAG: ${{ steps.merge.outputs.base_tag }}
+          SHORT: ${{ steps.merge.outputs.short }}
+        run: |
+          echo "$BASE_TAG+bennett.$SHORT" > .version
+          echo "VERSION=$BASE_TAG+bennett.$SHORT" >> "$GITHUB_ENV"
+
+      - name: Build (upstream Dockerfile, then bennett/Dockerfile.bennett)
+        uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
+        with:
+          source: .
+          files: bennett/docker-bake.hcl
+          targets: bennett
+          load: true
+          vars: |
+            REVISION=${{ steps.merge.outputs.commit }}
+            VERSION=${{ env.VERSION }}
+            TAG=${{ env.IMAGE }}
+          set: |
+            upstream.cache-from=type=gha,scope=bennett-upstream
+            upstream.cache-to=type=gha,scope=bennett-upstream,mode=max
+
+      - name: Scan (Trivy; fails on CRITICAL)
+        run: SCAN_DIR="$RUNNER_TEMP/scan" bennett/ci/scan.sh "$IMAGE"
+
+      - name: Scan summary
+        if: always()
+        run: cat "$RUNNER_TEMP/scan/summary.md" >> "$GITHUB_STEP_SUMMARY" 2> /dev/null || true
+
+      # The role trusts bennett-legal only; other branches run the reduced smoke test.
+      - name: AWS credentials (GitHub OIDC)
+        if: env.AWS_ROLE_ARN != '' && github.ref == 'refs/heads/bennett-legal'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-session-name: bennett-nightly-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: true
+
+      - name: Pull the production gateway by digest
+        if: env.AWS_ROLE_ARN != '' && env.GATEWAY_IMAGE != '' && github.ref == 'refs/heads/bennett-legal'
+        run: |
+          [[ $GATEWAY_IMAGE =~ ^[0-9]{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com/[a-z0-9._/-]+@sha256:[0-9a-f]{64}$ ]] \
+            || { echo '::error::GATEWAY_IMAGE must be an ECR image pinned by digest'; exit 1; }
+          aws ecr get-login-password | docker login --username AWS --password-stdin "${GATEWAY_IMAGE%%/*}"
+          docker pull --quiet "$GATEWAY_IMAGE"
+          echo "GATEWAY_READY=$GATEWAY_IMAGE" >> "$GITHUB_ENV"
+
+      - name: Smoke test in production mode
+        run: SMOKE_DIR="$RUNNER_TEMP/smoke" bennett/ci/run-smoke.sh "$IMAGE" "${GATEWAY_READY:-}"
+
+      - name: Smoke-test summary
+        if: always()
+        run: cat "$RUNNER_TEMP/smoke/out/summary.md" >> "$GITHUB_STEP_SUMMARY" 2> /dev/null || true
+
+      - name: Keep the smoke-test evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-test-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/smoke/out
+            ${{ runner.temp }}/scan/trivy.json
+            ${{ runner.temp }}/scan/trivy.txt
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Decide whether to publish
+        id: plan
+        env:
+          COMMIT: ${{ steps.merge.outputs.commit }}
+          SHORT: ${{ steps.merge.outputs.short }}
+        run: bennett/ci/plan-publish.sh
+
+      - name: Push the tested image to ECR
+        id: push
+        if: steps.plan.outputs.publish == 'true'
+        env:
+          SHORT: ${{ steps.merge.outputs.short }}
+        run: bennett/ci/push-image.sh
+
+      - name: Hand the merge to the publish job
+        if: steps.plan.outputs.publish == 'true' && steps.merge.outputs.changed == 'true'
+        env:
+          BEFORE: ${{ steps.merge.outputs.before }}
+        run: git bundle create "$RUNNER_TEMP/merge.bundle" "$BEFORE..HEAD"
+
+      - name: Upload the merge
+        if: steps.plan.outputs.publish == 'true' && steps.merge.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: merge-${{ github.run_id }}
+          path: ${{ runner.temp }}/merge.bundle
+          retention-days: 1
+
+      - name: Close the merge issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bennett/ci/merge-issue.sh close
+
+      - name: Registry logout
+        if: always()
+        run: docker logout "${GATEWAY_IMAGE%%/*}" > /dev/null 2>&1 || true
+
+  publish:
+    name: Publish the verified build
+    needs: verify
+    if: needs.verify.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      BEFORE: ${{ needs.verify.outputs.before }}
+      COMMIT: ${{ needs.verify.outputs.commit }}
+      SHORT: ${{ needs.verify.outputs.short }}
+      TAG: ${{ needs.verify.outputs.tag }}
+      DIGEST: ${{ needs.verify.outputs.digest }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Fetch the merge
+        if: needs.verify.outputs.commit != needs.verify.outputs.before
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: merge-${{ github.run_id }}
+          path: ${{ runner.temp }}
+
+      - name: Push the merge to bennett-legal (fast-forward only)
+        run: |
+          if [ "$COMMIT" != "$BEFORE" ]; then
+            git bundle verify "$RUNNER_TEMP/merge.bundle" > /dev/null
+            git fetch --quiet "$RUNNER_TEMP/merge.bundle" HEAD
+            [ "$(git rev-parse FETCH_HEAD)" = "$COMMIT" ]
+          fi
+          git push origin "$COMMIT:refs/heads/bennett-legal"
+
+      - name: AWS credentials (GitHub OIDC)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-session-name: bennett-nightly-publish-${{ github.run_id }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          mask-aws-account-id: true
+
+      - name: Tag the image verified in ECR
+        run: |
+          repository=${ECR_REPOSITORY#*/}
+          manifest=$(aws ecr batch-get-image --repository-name "$repository" --image-ids "imageDigest=$DIGEST" \
+            --accepted-media-types application/vnd.docker.distribution.manifest.v2+json application/vnd.oci.image.manifest.v1+json \
+              application/vnd.oci.image.index.v1+json application/vnd.docker.distribution.manifest.list.v2+json \
+            --query 'images[0].imageManifest' --output text)
+          aws ecr put-image --repository-name "$repository" --image-tag "$TAG" --image-digest "$DIGEST" --image-manifest "$manifest" > /dev/null
+          tagged=$(aws ecr describe-images --repository-name "$repository" --image-ids "imageTag=$TAG" --query 'imageDetails[0].imageDigest' --output text)
+          [ "$tagged" = "$DIGEST" ]
+
+      - name: Tag the commit verified in git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$TAG" -m "Verified by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID; image digest $DIGEST" "$COMMIT"
+          git push origin "refs/tags/$TAG"
+          tick='`'
+          printf '### Published\n\n%s = commit %s, image digest %s\n' "$tick$TAG$tick" "$tick$SHORT$tick" "$tick$DIGEST$tick" >> "$GITHUB_STEP_SUMMARY"

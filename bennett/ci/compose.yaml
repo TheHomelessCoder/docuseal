@@ -1,0 +1,158 @@
+name: bennett-smoke
+# Production-mode smoke stack for the nightly build (bennett/ci/run-smoke.sh).
+# The database, queue, app and gateway mirror the co-hosted production stack:
+# the same pinned postgres and valkey images, the same users, read-only root
+# filesystems, no capabilities, and a data network with no outside access.
+# Hostnames, keys and passwords are synthetic and made fresh for every run.
+#
+# CI-only stand-ins: mailpit (the SMTP relay), jud (JUD's webhook inbox) and
+# edge (Cloudflare: TLS, Access service-token JWTs, visitor IP). The gateway
+# and edge come from compose.gateway.yaml or compose.direct.yaml.
+x-hardening: &hardening
+  init: true
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  ulimits:
+    core: {soft: 0, hard: 0}
+
+services:
+  # Owns the data volumes the way host.py install owns /opt/docuseal/data/*.
+  owners:
+    <<: *hardening
+    image: valkey/valkey:8.1.11-alpine3.24@sha256:2602ace2be6569bc2bbb06f873776516ab9089821525be34f4305c67eb9db02a
+    user: "0:0"
+    cap_add: [CHOWN]
+    entrypoint: [/bin/sh, -c, 'chmod 700 /v/* && chown 70:70 /v/postgres && chown 999:1000 /v/valkey && chown 2000:2000 /v/attachments']
+    volumes:
+      - {type: volume, source: postgres, target: /v/postgres, volume: {nocopy: true}}
+      - {type: volume, source: valkey, target: /v/valkey, volume: {nocopy: true}}
+      - {type: volume, source: attachments, target: /v/attachments, volume: {nocopy: true}}
+    network_mode: none
+
+  postgres:
+    <<: *hardening
+    image: library/postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+    user: "70:70"
+    environment:
+      POSTGRES_DB: docuseal
+      POSTGRES_USER: docuseal
+      POSTGRES_PASSWORD: ${DOCUSEAL_DB_PASSWORD:?}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes: [{type: volume, source: postgres, target: /var/lib/postgresql/data, volume: {nocopy: true}}]
+    tmpfs: ["/var/run/postgresql:uid=70,gid=70", "/tmp:uid=70,gid=70"]
+    shm_size: 128m
+    mem_limit: 512m
+    networks: [internal]
+    depends_on:
+      owners: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U docuseal -d docuseal]
+      interval: 5s
+      retries: 30
+
+  valkey:
+    <<: *hardening
+    image: valkey/valkey:8.1.11-alpine3.24@sha256:2602ace2be6569bc2bbb06f873776516ab9089821525be34f4305c67eb9db02a
+    user: "999:1000"
+    entrypoint: [docker-entrypoint.sh]
+    command: [/bin/sh, -c, 'exec valkey-server --requirepass "$$VALKEY_PASSWORD" --appendonly yes --appendfsync always --save "" --maxmemory 128mb --maxmemory-policy noeviction']
+    environment:
+      VALKEY_PASSWORD: ${DOCUSEAL_REDIS_PASSWORD:?}
+    volumes: [{type: volume, source: valkey, target: /data, volume: {nocopy: true}}]
+    mem_limit: 192m
+    networks: [internal]
+    depends_on:
+      owners: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$VALKEY_PASSWORD" valkey-cli ping | grep -q PONG']
+      interval: 5s
+      retries: 30
+
+  docuseal:
+    <<: *hardening
+    image: ${DOCUSEAL_IMAGE:?}
+    platform: linux/amd64
+    user: "2000:2000"
+    environment:
+      RAILS_ENV: production
+      TZ: America/Chicago
+      DOCUSEAL_BIND: tcp://0.0.0.0:3000
+      DOCUSEAL_DATABASE_MODE: host-container
+      EXPECTED_DATABASE_HOST: postgres
+      DATABASE_URL: postgresql://docuseal:${DOCUSEAL_DB_PASSWORD}@postgres/docuseal?sslmode=disable
+      REDIS_HOST: valkey
+      REDIS_PASSWORD: ${DOCUSEAL_REDIS_PASSWORD}
+      SECRET_KEY_BASE: ${DOCUSEAL_SECRET_KEY_BASE:?}
+      ENCRYPTION_SECRET: ${DOCUSEAL_ENCRYPTION_SECRET:?}
+      HOST: ${SIGNING_HOST:?}
+      APP_URL: https://${SIGNING_HOST}
+      FORCE_SSL: "true"
+      ACTIVE_STORAGE_PUBLIC: "false"
+      SMTP_ADDRESS: mailpit
+      SMTP_PORT: "1025"
+      SMTP_DOMAIN: ci.test
+      SMTP_FROM: Bennett Legal <retainers@ci.test>
+      SMTP_USERNAME: synthetic
+      SMTP_PASSWORD: ${DOCUSEAL_SMTP_PASSWORD:?}
+      SMTP_AUTHENTICATION: plain
+      SMTP_ENABLE_STARTTLS: "true"
+      SMTP_SSL_VERIFY: "true"
+      RUN_MIGRATIONS: "true"
+      RAILS_MAX_THREADS: "5"
+      SIDEKIQ_THREADS: "3"
+      WEB_CONCURRENCY: "0"
+      # CI only: trust the run's own CA, so STARTTLS to mailpit is verified.
+      SSL_CERT_FILE: /run/ci/ca.pem
+    volumes:
+      - {type: volume, source: attachments, target: /data/docuseal, volume: {nocopy: true}}
+      - ${SMOKE_DIR:?}/tls/ca.pem:/run/ci/ca.pem:ro
+    tmpfs: ["/tmp:uid=2000,gid=2000", "/app/tmp:uid=2000,gid=2000"]
+    mem_limit: 1536m
+    networks: [internal, egress]
+    depends_on:
+      postgres: {condition: service_healthy}
+      valkey: {condition: service_healthy}
+      mailpit: {condition: service_started}
+    healthcheck:
+      test: [CMD, ruby, -rnet/http, -e, 'exit(Net::HTTP.get_response(URI("http://127.0.0.1:3000/up")).code == "200" ? 0 : 1)']
+      interval: 5s
+      timeout: 5s
+      start_period: 180s
+      retries: 12
+
+  mailpit:
+    <<: *hardening
+    image: axllent/mailpit:v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
+    user: "1000:1000"
+    environment:
+      MP_SMTP_TLS_CERT: /run/ci/tls.crt
+      MP_SMTP_TLS_KEY: /run/ci/tls.key
+      MP_SMTP_REQUIRE_STARTTLS: "true"
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_MAX_MESSAGES: "500"
+    volumes: ["${SMOKE_DIR:?}/tls:/run/ci:ro"]
+    tmpfs: ["/tmp:uid=1000,gid=1000"]
+    ports: ["127.0.0.1:8025:8025"]
+    networks: [egress]
+
+  jud:
+    <<: *hardening
+    image: library/node:24.22.2-alpine3.24@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
+    user: "1000:1000"
+    command: [node, /ci/jud.mjs]
+    environment:
+      WEBHOOK_SECRET: ${CI_WEBHOOK_SECRET:?}
+    volumes: ["./:/ci:ro"]
+    ports: ["127.0.0.1:8090:8090"]
+    networks: [egress]
+
+networks:
+  internal:
+    internal: true
+  egress: {}
+
+volumes:
+  postgres: {}
+  valkey: {}
+  attachments: {}

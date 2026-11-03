@@ -1,0 +1,28 @@
+# Reduced path for runs without the gateway image (before the AWS role
+# exists): edge talks to DocuSeal directly. The gateway checks are skipped and
+# reported as skipped; nothing from this mode is ever published.
+services:
+  edge:
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    image: library/node:24.22.2-alpine3.24@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
+    user: "0:0"
+    command: [node, /ci/edge.mjs]
+    environment:
+      SIGNING_HOST: ${SIGNING_HOST}
+      STAFF_HOST: ${STAFF_HOST}
+      API_HOST: ${API_HOST}
+      CF_ACCESS_TEAM: ${CF_ACCESS_TEAM}
+      CF_ACCESS_AUD: ${CF_ACCESS_AUD}
+      CF_API_ACCESS_AUD: ${CF_API_ACCESS_AUD}
+      CI_ACCESS_CLIENT_ID: ${CI_ACCESS_CLIENT_ID}
+      CI_ACCESS_CLIENT_SECRET: ${CI_ACCESS_CLIENT_SECRET}
+      UPSTREAM: docuseal:3000
+    volumes: ["./:/ci:ro", "${SMOKE_DIR:?}/tls:/run/ci:ro"]
+    ports: ["127.0.0.1:443:443"]
+    networks: [internal, egress]
+    depends_on:
+      docuseal: {condition: service_healthy}

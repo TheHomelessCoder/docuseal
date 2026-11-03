@@ -1,0 +1,62 @@
+# Production path: edge (standing in for cloudflared and Cloudflare) shares
+# the gateway's loopback, exactly as the tunnel does, and every request goes
+# through the real gateway image.
+services:
+  gateway:
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    image: ${GATEWAY_IMAGE:?}
+    user: "65532:65532"
+    command: [gunicorn, --bind, '127.0.0.1:8080', --workers, '2', --threads, '4', --timeout, '150', --access-logfile, /dev/null, --error-logfile, /dev/null, 'app:app']
+    environment:
+      SIGNING_HOST: ${SIGNING_HOST}
+      STAFF_HOST: ${STAFF_HOST}
+      API_HOST: ${API_HOST}
+      UPSTREAM: http://docuseal:3000
+      DISK_STORAGE: "true"
+      CF_ACCESS_TEAM: ${CF_ACCESS_TEAM}
+      CF_ACCESS_AUD: ${CF_ACCESS_AUD}
+      CF_API_ACCESS_AUD: ${CF_API_ACCESS_AUD}
+      # CI only: the Access key set comes from edge, signed by the run's CA.
+      SSL_CERT_FILE: /run/ci/ca.pem
+    volumes: ["${SMOKE_DIR:?}/tls/ca.pem:/run/ci/ca.pem:ro"]
+    extra_hosts: ["${CF_ACCESS_TEAM}.cloudflareaccess.com:127.0.0.1"]
+    tmpfs: ["/tmp:uid=65532,gid=65532"]
+    mem_limit: 256m
+    # CI only: the browser and the JUD stand-in reach edge here, as the
+    # internet reaches the tunnel. Production publishes nothing.
+    ports: ["127.0.0.1:443:443"]
+    networks: [internal, egress]
+    depends_on:
+      docuseal: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, /gateway/healthcheck.py]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  edge:
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    image: library/node:24.22.2-alpine3.24@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
+    user: "0:0"
+    command: [node, /ci/edge.mjs]
+    network_mode: service:gateway
+    environment:
+      SIGNING_HOST: ${SIGNING_HOST}
+      STAFF_HOST: ${STAFF_HOST}
+      API_HOST: ${API_HOST}
+      CF_ACCESS_TEAM: ${CF_ACCESS_TEAM}
+      CF_ACCESS_AUD: ${CF_ACCESS_AUD}
+      CF_API_ACCESS_AUD: ${CF_API_ACCESS_AUD}
+      CI_ACCESS_CLIENT_ID: ${CI_ACCESS_CLIENT_ID}
+      CI_ACCESS_CLIENT_SECRET: ${CI_ACCESS_CLIENT_SECRET}
+      UPSTREAM: 127.0.0.1:8080
+    volumes: ["./:/ci:ro", "${SMOKE_DIR:?}/tls:/run/ci:ro"]
+    depends_on:
+      gateway: {condition: service_healthy}

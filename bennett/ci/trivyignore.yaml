@@ -1,0 +1,16 @@
+# CRITICAL findings the nightly gate accepts. Each entry is scoped to one path,
+# says why, and expires, so it comes back for review. The full report keeps
+# listing them. Remove an entry as soon as a release fixes it.
+vulnerabilities:
+  - id: CVE-2026-33210
+    paths:
+      - usr/local/lib/ruby/gems/4.0.0/specifications/default/json-2.18.0.gemspec
+    statement: >-
+      Ruby 4.0.9's built-in json gem, from the ruby:4.0.9-alpine base that
+      DocuSeal's Dockerfile uses. The application bundle loads its own json
+      (3.1.0 in DocuSeal 3.3.5). Outside the bundle only bennett/launch.rb uses
+      the built-in gem, to write fixed status events; it parses nothing. The
+      flaw needs JSON.parse with allow_duplicate_key: false on untrusted input.
+      Accepted 2026-11-03 (also listed in docs/docuseal/image-scan-2026-11-03.md
+      in bennett-legal-ops). Drop it when DocuSeal moves to a Ruby with json >= 2.19.2.
+    expired_at: 2027-01-15
