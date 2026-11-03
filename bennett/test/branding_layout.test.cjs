@@ -160,6 +160,9 @@ async function run() {
       { uuid: 'f5', submitter_uuid: 'me', name: 'Signature', type: 'signature', readonly: false }];
     const attr = value => JSON.stringify(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
     for (const language of ['en', 'es']) {
+      // A fresh document per language: setContent can keep the previous
+      // pass's scroll position, and the page counter follows the scroll.
+      await page.goto('about:blank');
       await page.setViewportSize({ width: 390, height: 700 });
       await page.setContent(`<!doctype html><html lang="${language}"><body class="bennett-signer"><main>
         <div id="signing_form_header" style="position:sticky;top:0;height:80px">Header</div>
