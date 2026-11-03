@@ -118,9 +118,11 @@ set -e
 
 step "container posture"
 posture=0
-for service in postgres valkey docuseal gateway; do
+services='postgres valkey docuseal'
+[ "$mode" = gateway ] && services="$services gateway"
+for service in $services; do
   id=$("${compose[@]}" ps -q "$service")
-  [ -n "$id" ] || continue
+  [ -n "$id" ] || { echo "$service: missing -> FAIL" | tee -a "$SMOKE_DIR/out/posture.txt"; posture=1; continue; }
   line=$(docker inspect --format '{{.Config.User}}|{{.HostConfig.ReadonlyRootfs}}|{{.HostConfig.CapDrop}}|{{.HostConfig.SecurityOpt}}|{{.State.Health.Status}}' "$id")
   IFS='|' read -r user readonly capdrop secopt health <<< "$line"
   verdict=ok
