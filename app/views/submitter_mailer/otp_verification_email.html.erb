@@ -1,5 +1,12 @@
-<%# Bennett Legal verification code, in the signer's language. %>
+<%# Bennett Legal verification code, in the signer's language. The code is the first
+    six-digit number of the plain-text part (bennett/ci/smoke.mjs reads it there). %>
 <% es = I18n.locale.to_s.start_with?('es') %>
-<p style="margin:0 0 12px;"><%= es ? 'Su código de verificación para abrir su contrato de Bennett Legal es:' : 'Your verification code to open your Bennett Legal agreement is:' %></p>
-<p style="margin:0 0 20px;font:700 36px/1.2 Arial,Helvetica,sans-serif;letter-spacing:6px;color:#0b1120;"><%= @otp_code %></p>
-<p style="margin:0 0 12px;"><%= es ? 'Escriba este código en la página de firma. Si usted no lo pidió, puede ignorar este correo.' : 'Type this code on the signing page. If you did not ask for it, you can ignore this email.' %></p>
+<% lead = es ? 'Su código de verificación para abrir su contrato de Bennett Legal es:' : 'Your verification code to open your Bennett Legal agreement is:' %>
+<% content_for :bennett_preview, "#{lead} #{@otp_code}" %>
+<%= render 'bennett_paragraph', text: lead %>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="email-callout" bgcolor="#f1eee5" style="margin:0 0 23px;background-color:#f1eee5;border:1px solid #b18b35;">
+  <tr>
+    <td class="email-heading" style="padding:18px 24px;font:bold 34px/1.2 Arial,Helvetica,sans-serif;letter-spacing:6px;color:#001a2d;"><%= @otp_code %></td>
+  </tr>
+</table>
+<%= render 'bennett_paragraph', text: es ? 'Escriba este código en la página de firma. Si usted no lo pidió, puede ignorar este correo.' : 'Type this code on the signing page. If you did not ask for it, you can ignore this email.' %>

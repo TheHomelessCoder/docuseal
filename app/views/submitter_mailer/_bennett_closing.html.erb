@@ -1,0 +1,4 @@
+<%# The firm's phone line and the letterhead's sign-off, in the signer's language. %>
+<% es = I18n.locale.to_s.start_with?('es') %>
+<p class="email-text" style="margin:0 0 23px;font:16px/1.75 Arial,Helvetica,sans-serif;color:#263747;"><%= es ? '¿Preguntas? Llámenos al' : 'Questions? Call us at' %> <a class="email-link" href="tel:+19729724969" style="color:#365368;text-decoration:underline;">(972) 972-4969</a> <%= es ? 'o responda a este correo.' : 'or reply to this email.' %></p>
+<p class="email-heading" style="margin:0;color:#001a2d;font:16px/1.55 Georgia,serif;"><strong>Bennett Legal</strong></p>

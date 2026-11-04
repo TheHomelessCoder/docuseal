@@ -33,7 +33,8 @@ ruby bennett/test/run.rb
    - every DocuSeal API call JUD makes, with JUD's headers and the checks JUD applies to the answers (template representation, PDF bytes, clone, submission fields, external-ID lookup, invite, expiry);
    - the practice-stamp `PUT /api/templates/:id` and its re-read;
    - the gateway's refusals and headers, and the signer assets it serves;
-   - a Spanish client and an attorney signing in headless Chromium through the gateway, including the email codes, the recipient-order patch refusing the attorney's early write, the signed PDF with its digital signature, the audit log, the signed webhooks and the signed-copy email.
+   - a Spanish client and an attorney signing in headless Chromium through the gateway, including the email codes, the recipient-order patch refusing the attorney's early write, the signed PDF with its digital signature, the audit log, the signed webhooks and the signed-copy email;
+   - every email it receives: the intake nurture letterhead in light mode, dark mode and Outlook's dark mode (painted in the browser, with a dark screenshot saved), DocuSeal's attribution, and a plain-text part that starts with the eyebrow rather than the stylesheet.
 5. Publishes only if all of that passed, from `bennett-legal`, with the AWS role: it pushes the tested image to ECR as `bl-<commit>`. The `publish` job then pushes the merge to `bennett-legal` (fast-forward only) and tags the same digest `verified-<yyyymmdd>-<commit>` in ECR and in git.
 
 A commit that already has a verified image is rebuilt every night but republished only once a week, for current Alpine packages. Without the AWS role the run still merges, tests, builds, scans and smoke-tests, but with the edge talking to DocuSeal directly (no gateway checks), and publishes nothing.

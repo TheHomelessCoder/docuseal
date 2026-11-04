@@ -1,1 +1,12 @@
-<%= render 'shared/email_attribution' %>
+<%# Bennett Legal: DocuSeal's email attribution (LICENSE_ADDITIONAL_TERMS), the text of
+    shared/_email_attribution set small in the letterhead's navy footer. The link gets
+    its colour inline, for clients that drop the style block: only a fixed attribute is
+    added to the translation's own (already escaped) markup. %>
+<% attribution = if @current_account&.testing?
+                   t('sent_using_product_name_in_testing_mode_html', product_url: "#{Docuseal::PRODUCT_EMAIL_URL}/start", product_name: Docuseal.product_name)
+                 elsif Docuseal.multitenant?
+                   t('sent_using_product_name_free_document_signing_html', product_url: "#{Docuseal::PRODUCT_EMAIL_URL}/start", product_name: Docuseal.product_name)
+                 else
+                   t('sent_using_product_name_open_source_software_html', product_url: "#{Docuseal::PRODUCT_EMAIL_URL}/open", product_name: Docuseal.product_name)
+                 end %>
+<div class="gmail-screen" style="display:inline-block;"><div class="gmail-difference" style="display:inline-block;"><p class="email-muted" style="margin:0;font:11px/1.6 Arial,sans-serif;color:#bbc7d0;"><%= attribution.sub('<a ', '<a class="footer-link" style="color:#dcc68f;text-decoration:none;" ').html_safe %></p></div></div>

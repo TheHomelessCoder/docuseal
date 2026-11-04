@@ -3,10 +3,11 @@
 <% else %>
   <%# Bennett Legal signed copy, in the signer's language. %>
   <% es = I18n.locale.to_s.start_with?('es') %>
+  <% thanks = es ? 'Gracias por firmar. Su copia firmada está adjunta a este correo para sus archivos.' : 'Thank you for signing. Your signed copy is attached to this email for your records.' %>
+  <% content_for :bennett_preview, thanks %>
   <%# One copy email can go to every signer, so greet without a name. %>
-  <p style="margin:0 0 16px;font-size:22px;font-family:Georgia,serif;"><%= es ? 'Hola,' : 'Hello,' %></p>
-  <p style="margin:0 0 12px;"><%= es ? 'Gracias por firmar. Su copia firmada está adjunta a este correo para sus archivos.' : 'Thank you for signing. Your signed copy is attached to this email for your records.' %></p>
+  <%= render 'bennett_paragraph', text: es ? 'Hola,' : 'Hello,' %>
+  <%= render 'bennett_paragraph', text: thanks %>
   <%= render 'bennett_button', url: submissions_preview_url(@submitter.submission.slug, { sig: @sig, host: @custom_domain || ENV.fetch('EMAIL_HOST', Docuseal.default_url_options[:host]) }.compact), label: es ? 'Ver mi copia firmada' : 'View my signed copy' %>
-  <p style="margin:0 0 12px;"><%= es ? '¿Preguntas? Llámenos al (972) 972-4969 o responda a este correo.' : 'Questions? Call us at (972) 972-4969 or reply to this email.' %></p>
-  <p style="margin:0;">Bennett Legal</p>
+  <%= render 'bennett_closing' %>
 <% end %>

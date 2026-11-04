@@ -33,7 +33,9 @@ module BennettSourceCheck
       ["t('powered_by')", 'Docuseal::PRODUCT_URL', 'Docuseal.product_name'],
     'app/views/start_form/_banner.html.erb' => ["render 'shared/bennett_signing_masthead'"],
     'app/views/submit_form/_banner.html.erb' => ["render 'shared/bennett_signing_masthead'"],
-    'app/views/layouts/mailer.html.erb' => ["render partial: 'shared/mailer_attribution'"]
+    'app/views/layouts/mailer.html.erb' => ["render partial: 'shared/mailer_attribution'"],
+    'app/views/shared/_mailer_attribution.html.erb' =>
+      ['sent_using_product_name_open_source_software_html', 'Docuseal::PRODUCT_EMAIL_URL', 'Docuseal.product_name']
   }.freeze
   LICENSES = %w[LICENSE LICENSE_ADDITIONAL_TERMS].freeze
   AUTHORIZE = 'Submitters::AuthorizedForForm'

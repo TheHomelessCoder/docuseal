@@ -57,6 +57,51 @@ class BrandingTest < Minitest::Test
     refute_match(/innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function/, script)
   end
 
+  MAILER = BennettTest.read('app/views/layouts/mailer.html.erb')
+  # Partials whose text lands in every Bennett email.
+  EMAIL_PARTS = %w[app/views/layouts/mailer.html.erb app/views/shared/_mailer_attribution.html.erb
+                   app/views/submitter_mailer/_bennett_paragraph.html.erb app/views/submitter_mailer/_bennett_button.html.erb
+                   app/views/submitter_mailer/_bennett_closing.html.erb].freeze
+
+  # Emails use the intake nurture letterhead (bennett-legal-ops services/jud-dashboard/
+  # lib/intake/nurture/design.ts), in light mode and in every dark mode it handles.
+  def test_emails_use_the_nurture_letterhead
+    ['<meta name="color-scheme" content="light dark">', '<meta name="supported-color-schemes" content="light dark">',
+     ':root{color-scheme:light dark;supported-color-schemes:light dark}', 'u + .email-body .gmail-difference',
+     'class="email-body email-page"', 'class="email-paper" bgcolor="#fcfaf5"', 'class="email-page" bgcolor="#f0f1f1"',
+     'class="inset email-header navy-surface" bgcolor="#001a2d"', 'class="inset email-disclosure" bgcolor="#efefed"',
+     'class="inset contact-footer navy-surface" bgcolor="#001a2d"', 'https://clients.bennettlegal.com/brand/nurture',
+     'tel:+19729724969', 'mailto:solar@bennettlegal.com', "'RETAINER AGREEMENT'", "'CONTRATO DE SERVICIOS LEGALES'",
+     "render partial: 'shared/mailer_attribution'"].each { |needle| assert MAILER.include?(needle), "letterhead lost #{needle}" }
+    # Outlook recolours navy surfaces unless they carry a background image.
+    assert_operator MAILER.scan('background-image:linear-gradient(#001a2d,#001a2d)').length, :>=, 3
+    dark = MAILER[/@media \(prefers-color-scheme:dark\)\{(.*?)\}\}/, 1]
+    %w[email-page email-paper email-text email-heading email-muted email-link email-callout email-disclosure email-rule
+       cta-surface cta-link navy-surface video-kicker footer-address footer-link].each do |name|
+      assert dark&.include?(".#{name}{"), "no prefers-color-scheme rule for .#{name}"
+      assert MAILER.include?("[data-ogsc] .#{name},[data-ogsb] .#{name}{"), "no Outlook rule for .#{name}"
+    end
+    button = BennettTest.read('app/views/submitter_mailer/_bennett_button.html.erb')
+    %w[cta-surface cta-link border:1px\ solid\ #b18b35 gmail-difference].each { |needle| assert button.include?(needle), "button lost #{needle}" }
+    assert BennettTest.read('app/views/submitter_mailer/otp_verification_email.html.erb').include?('class="email-callout"'),
+           'the code is no longer in the letterhead callout'
+  end
+
+  # The plain-text part is converted from the HTML (lib/html_to_plain_text.rb), and the
+  # nightly smoke test reads the code as its first six-digit number. The stylesheet
+  # (full of six-digit colours), the title and the hidden preview stay out of it.
+  def test_email_text_part_leaves_out_the_stylesheet
+    markers = %r{<!-- start text/html -->.*?<!-- end text/html -->}m
+    assert_includes BennettTest.read('lib/html_to_plain_text.rb'), markers.source
+    visible = MAILER.gsub(markers, '')
+    assert MAILER.include?('<style>'), 'the letterhead has no stylesheet'
+    refute visible.match?(/<style|<title|display:none/), 'the stylesheet, title or hidden preview would reach the plain-text part'
+    EMAIL_PARTS.each do |file|
+      text = BennettTest.read(file).gsub(markers, '').gsub(/<%.*?%>/m, '').gsub(/<[^>]*>/, ' ')
+      refute_match(/\b\d{6}\b/, text, "#{file} prints a six-digit number")
+    end
+  end
+
   def test_licences_are_the_upstream_bytes
     LICENSES.each { |file, sha| assert_equal sha, Digest::SHA256.file(BennettTest.path(file)).hexdigest, file }
   end

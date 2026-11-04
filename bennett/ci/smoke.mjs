@@ -250,6 +250,43 @@ async function mail(address, subject, after, timeout = 120_000) {
   }, timeout, `email ${subject} to ${address}`);
 }
 const signerLink = message => (message.HTML + message.Text).match(new RegExp(`https://${SIGN.replaceAll('.', '\\.')}/s/[A-Za-z0-9_-]{8,128}`))?.[0];
+// Emails use the intake nurture letterhead (bennett-legal-ops nurture/design.ts) with
+// DocuSeal's attribution. The plain-text part starts with the eyebrow, never the
+// stylesheet, and in a browser the paper turns dark in dark mode and under Outlook's
+// data-ogsc/data-ogsb rules, without horizontal overflow on a phone.
+async function letterhead(label, message) {
+  const html = message.HTML ?? '';
+  const text = (message.Text ?? '').trimStart();
+  const eyebrow = /^Su /.test(message.Subject) ? 'CONTRATO DE SERVICIOS LEGALES' : 'RETAINER AGREEMENT';
+  const absent = ['<meta name="color-scheme" content="light dark">', '@media (prefers-color-scheme:dark)', '[data-ogsc] .email-paper',
+    'background-image:linear-gradient(#001a2d,#001a2d)', 'https://clients.bennettlegal.com/brand/nurture/footer-logo.png',
+    'docuseal.com/open'].filter(needle => !html.includes(needle));
+  const context = await browser.newContext({ viewport: { width: 390, height: 900 } });
+  try {
+    const page = await context.newPage();
+    await page.route('**/*', route => route.abort());
+    const paint = async (colorScheme, outlook = false) => {
+      await page.emulateMedia({ colorScheme });
+      await page.setContent(html, { waitUntil: 'load' });
+      if (outlook) await page.evaluate(() => document.querySelectorAll('*').forEach(element => {
+        element.setAttribute('data-ogsc', '');
+        element.setAttribute('data-ogsb', '');
+      }));
+      return page.evaluate(() => ({ paper: getComputedStyle(document.querySelector('.email-paper')).backgroundColor,
+        overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth }));
+    };
+    const light = await paint('light');
+    const outlook = await paint('light', true);
+    const dark = await paint('dark');
+    await page.screenshot({ path: join(OUT, `email-${label.replaceAll(' ', '-')}-dark.png`), fullPage: true }).catch(() => undefined);
+    check(`${label} uses the Bennett letterhead (light, dark and Outlook dark mode)`, !absent.length && text.startsWith(eyebrow)
+      && !text.includes('{') && light.paper === 'rgb(252, 250, 245)' && dark.paper === 'rgb(20, 35, 48)'
+      && outlook.paper === 'rgb(20, 35, 48)' && ![light, dark, outlook].some(state => state.overflow),
+    { absent, text: text.slice(0, 40), light, dark, outlook });
+  } finally {
+    await context.close();
+  }
+}
 const events = async () => (await fetch('http://127.0.0.1:8090/events')).json();
 
 // --- Browser -----------------------------------------------------------------
@@ -283,6 +320,7 @@ async function passEmailCode(page, email, label) {
   await send.click();
   const message = await mail(email, /verification code|código de verificación/i, since);
   check(`${label}: verification email is Bennett-branded`, /Bennett Legal/.test(message.Subject), message.Subject);
+  await letterhead(`${label} code email`, message);
   const code = message.Text.match(/\b\d{6}\b/)?.[0];
   const input = page.locator('input[name="one_time_code"], input[autocomplete="one-time-code"]').first();
   await input.fill(code ?? '');
@@ -457,6 +495,7 @@ try {
     await jud.invite(clientCreated.id);
     const invitation = await mail(snapshot.recipients[0].email, /listo para firmar|ready to sign/i, since);
     check('client invitation is Bennett-branded and in Spanish', invitation.Subject === 'Su contrato de Bennett Legal está listo para firmar', invitation.Subject);
+    await letterhead('client invitation', invitation);
     const link = signerLink(invitation);
     check('invitation links the signing host and this signer', link === `https://${SIGN}/s/${clientCreated.slug}`);
     const response = await clientPage.goto(link, { waitUntil: 'load' });
@@ -539,6 +578,7 @@ try {
       || e.external_ids.includes(snapshot.recipients[0].externalId)));
     const copy = await mail(snapshot.recipients[0].email, /firmado|signed/i, started, 120_000);
     check('client receives the Bennett signed copy in Spanish', copy.Subject === 'Su contrato firmado de Bennett Legal', copy.Subject);
+    await letterhead('signed copy', copy);
   });
 
   // 9. Practice run (practice.ts): clone, stamp every page, re-read, send.
@@ -580,6 +620,7 @@ try {
     const early = list.messages.filter(m => m.To.some(to => to.Address.toLowerCase() === submitters[1].email));
     check('practice invitation goes to the client role first, in English', invitation.Subject === 'Your Bennett Legal retainer is ready to sign'
       && early.length === 0, { subject: invitation.Subject, attorneyEmails: early.length });
+    await letterhead('practice invitation', invitation);
   });
 
   // 10. Cancellation (worker.ts cancel): an explicit expiry update.

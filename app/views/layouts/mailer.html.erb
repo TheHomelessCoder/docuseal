@@ -1,33 +1,109 @@
 <!DOCTYPE html>
-<html>
+<%# Bennett Legal letterhead: the intake nurture campaign's design, letterhead() in
+    bennett-legal-ops services/jud-dashboard/lib/intake/nurture/design.ts. Inline styles
+    are the light, mobile layout for clients that drop the style block. The block adds
+    dark mode (prefers-color-scheme, Outlook's data-ogsc/data-ogsb, the Gmail iOS blend
+    fix) and the desktop gutters. Anything between the text/html markers stays out of
+    the plain-text part (lib/html_to_plain_text.rb), so the stylesheet never leads it. %>
+<% es = I18n.locale.to_s.start_with?('es') %>
+<% brand = 'https://clients.bennettlegal.com/brand/nurture' %>
+<% signing = controller.is_a?(SubmitterMailer) || controller.is_a?(TemplateMailer) %>
+<%# Staff notices (completed, declined) and account mail carry the address only. %>
+<% to_signer = signing && !controller.action_name.in?(%w[completed_email declined_email]) %>
+<% eyebrow = if signing
+               es ? 'CONTRATO DE SERVICIOS LEGALES' : 'RETAINER AGREEMENT'
+             else
+               es ? 'FIRMA DE DOCUMENTOS' : 'DOCUMENT SIGNING'
+             end %>
+<html lang="<%= I18n.locale %>">
   <head>
-    <title></title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style></style>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <!-- start text/html -->
+    <title><%= message.subject %></title>
+    <style>
+      :root{color-scheme:light dark;supported-color-schemes:light dark}
+      u + .email-body .gmail-screen{background:#000;mix-blend-mode:screen}
+      u + .email-body .gmail-difference{background:#000;mix-blend-mode:difference}
+      u + .email-body .gmail-difference,u + .email-body .gmail-difference *{color:#fff!important}
+      @media (prefers-color-scheme:dark){.email-page{background-color:#0b141d!important;}.email-paper{background-color:#142330!important;}.email-text{color:#e3e9ed!important;}.email-heading{color:#f5f1e8!important;}.email-muted{color:#bbc7d0!important;}.email-link{color:#e6cc8e!important;}.email-accent{color:#d9b96c!important;}.email-rule{border-color:#5d533b!important;}.email-callout{background-color:#25313a!important;border-color:#c4a154!important;}.email-closing{background-color:#1c303f!important;}.email-disclosure{background-color:#101d28!important;color:#bbc7d0!important;}.cta-surface{background-color:#213d52!important;background-image:linear-gradient(#213d52,#213d52)!important;border-color:#c4a154!important;}.cta-link{color:#ffffff!important;}.navy-surface{background-color:#001a2d!important;background-image:linear-gradient(#001a2d,#001a2d)!important;}.video-title{color:#ffffff!important;}.video-byline{color:#d7e0e6!important;}.video-kicker{color:#d5b05b!important;}.footer-address{color:#d4dde3!important;}.footer-link{color:#dcc68f!important;}.video-cta{background-color:#d4b15a!important;color:#001a2d!important;}}
+      [data-ogsc] .email-page,[data-ogsb] .email-page{background-color:#0b141d!important;}
+      [data-ogsc] .email-paper,[data-ogsb] .email-paper{background-color:#142330!important;}
+      [data-ogsc] .email-text,[data-ogsb] .email-text{color:#e3e9ed!important;}
+      [data-ogsc] .email-heading,[data-ogsb] .email-heading{color:#f5f1e8!important;}
+      [data-ogsc] .email-muted,[data-ogsb] .email-muted{color:#bbc7d0!important;}
+      [data-ogsc] .email-link,[data-ogsb] .email-link{color:#e6cc8e!important;}
+      [data-ogsc] .email-accent,[data-ogsb] .email-accent{color:#d9b96c!important;}
+      [data-ogsc] .email-rule,[data-ogsb] .email-rule{border-color:#5d533b!important;}
+      [data-ogsc] .email-callout,[data-ogsb] .email-callout{background-color:#25313a!important;border-color:#c4a154!important;}
+      [data-ogsc] .email-closing,[data-ogsb] .email-closing{background-color:#1c303f!important;}
+      [data-ogsc] .email-disclosure,[data-ogsb] .email-disclosure{background-color:#101d28!important;color:#bbc7d0!important;}
+      [data-ogsc] .cta-surface,[data-ogsb] .cta-surface{background-color:#213d52!important;background-image:linear-gradient(#213d52,#213d52)!important;border-color:#c4a154!important;}
+      [data-ogsc] .cta-link,[data-ogsb] .cta-link{color:#ffffff!important;}
+      [data-ogsc] .navy-surface,[data-ogsb] .navy-surface{background-color:#001a2d!important;background-image:linear-gradient(#001a2d,#001a2d)!important;}
+      [data-ogsc] .video-title,[data-ogsb] .video-title{color:#ffffff!important;}
+      [data-ogsc] .video-byline,[data-ogsb] .video-byline{color:#d7e0e6!important;}
+      [data-ogsc] .video-kicker,[data-ogsb] .video-kicker{color:#d5b05b!important;}
+      [data-ogsc] .footer-address,[data-ogsb] .footer-address{color:#d4dde3!important;}
+      [data-ogsc] .footer-link,[data-ogsb] .footer-link{color:#dcc68f!important;}
+      [data-ogsc] .video-cta,[data-ogsb] .video-cta{background-color:#d4b15a!important;color:#001a2d!important;}
+      a[x-apple-data-detectors]{color:inherit!important;text-decoration:inherit!important}
+      <%# Links that upstream bodies leave unstyled; inline colours (button, phone) still win. %>
+      .email-text a{color:#365368}
+      @media (prefers-color-scheme:dark){.email-text a{color:#e6cc8e}}
+      [data-ogsc] .email-text a,[data-ogsb] .email-text a{color:#e6cc8e}
+      @media screen and (min-width:601px){.inset{padding-left:48px!important;padding-right:48px!important}.outer{padding:28px 12px!important}.footer-logo{display:table-cell!important;width:43%!important;padding:0 24px 0 0!important}.footer-details{display:table-cell!important;width:auto!important;padding:3px 0 0!important}.contact-footer{padding-left:36px!important;padding-right:36px!important}}
+    </style>
+    <!--[if mso]><style>.inset{padding-left:48px!important;padding-right:48px!important}.outer{padding:28px 12px!important}.footer-logo{display:table-cell!important;width:43%!important;padding:0 24px 0 0!important}.footer-details{display:table-cell!important;width:auto!important;padding:3px 0 0!important}.contact-footer{padding-left:36px!important;padding-right:36px!important}</style><![endif]-->
+    <!-- end text/html -->
   </head>
-  <%# Bennett Legal email frame: navy header with the firm logo, a white card and large type. %>
-  <% url = Docuseal.default_url_options %>
-  <% asset_origin = "#{url[:protocol] || 'https'}://#{ENV.fetch('EMAIL_HOST', url[:host])}#{":#{url[:port]}" if url[:port] && ENV['EMAIL_HOST'].blank?}" %>
-  <body dir="<%= TextUtils.rtl?(yield) ? 'rtl' : 'auto' %>" style="margin:0;padding:0;background:#eef1f5;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f5;">
+  <body class="email-body email-page" dir="<%= TextUtils.rtl?(yield) ? 'rtl' : 'auto' %>" bgcolor="#f0f1f1" style="margin:0;padding:0;background-color:#f0f1f1;">
+    <% if content_for?(:bennett_preview) %>
+    <!-- start text/html --><div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;"><%= yield :bennett_preview %></div><!-- end text/html -->
+    <% end %>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="email-page" bgcolor="#f0f1f1">
       <tr>
-        <td align="center" style="padding:24px 12px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <td class="outer" align="center" style="padding:0;">
+          <table role="presentation" width="680" cellspacing="0" cellpadding="0" border="0" class="email-paper" bgcolor="#fcfaf5" style="width:100%;max-width:680px;background-color:#fcfaf5;">
             <tr>
-              <td style="background:#0b1120;border-bottom:4px solid #f5b324;border-radius:12px 12px 0 0;padding:18px 28px;">
-                <img src="<%= asset_origin %>/packs/bennett-legal-logo-white.png" width="140" height="60" alt="Bennett Legal" style="display:block;border:0;width:140px;height:auto;color:#ffffff;font:700 22px Georgia,serif;">
+              <td class="inset email-header navy-surface" bgcolor="#001a2d" style="padding:28px 24px 0;text-align:center;background-color:#001a2d;background-image:linear-gradient(#001a2d,#001a2d);">
+                <!-- start text/html --><a href="https://bennettlegal.com/" style="display:inline-block;margin:0 auto 24px;text-decoration:none;"><img src="<%= brand %>/footer-logo.png" alt="Bennett Legal" width="216" style="display:block;width:216px;max-width:100%;height:auto;border:0;color:#ffffff;background-color:#001a2d;"></a><!-- end text/html -->
+                <div class="email-rule" style="border-bottom:1px solid #d4c395;text-align:left;"><p class="video-kicker" style="margin:0 0 16px;font:bold 10px/1.6 Arial,sans-serif;letter-spacing:2.2px;color:#d5b05b;"><span class="gmail-screen" style="display:inline-block;"><span class="gmail-difference" style="display:inline-block;"><%= eyebrow %></span></span></p></div>
               </td>
             </tr>
             <tr>
-              <td style="background:#ffffff;border-radius:0 0 12px 12px;padding:28px;color:#0f172a;font:17px/1.6 Arial,Helvetica,sans-serif;">
+              <td class="inset email-text" style="padding:30px 24px 32px;font:16px/1.75 Arial,Helvetica,sans-serif;color:#263747;word-break:break-word;overflow-wrap:anywhere;">
                 <%= yield %>
               </td>
             </tr>
             <tr>
-              <td style="padding:16px 8px;color:#6b7280;font:13px/1.5 Arial,Helvetica,sans-serif;text-align:center;">
-                Bennett Legal · 12770 Coit Rd., Ste 720, Dallas, TX 75251 · (972) 972-4969
-                <%= render partial: 'shared/mailer_attribution' %>
+              <td class="inset email-disclosure" bgcolor="#efefed" style="padding:25px 24px;color:#596572;font:11px/1.65 Arial,sans-serif;">
+                <% if to_signer %>
+                <p style="margin:0 0 12px;"><%= es ? 'Usted recibe este correo porque Bennett Legal preparó un contrato para que usted lo revise y lo firme.' : 'You are receiving this email because Bennett Legal prepared an agreement for you to review and sign.' %></p>
+                <% end %>
+                <p style="margin:0;">12770 Coit Road, Suite 720 · Dallas, TX 75251</p>
+              </td>
+            </tr>
+            <tr>
+              <td class="inset contact-footer navy-surface" bgcolor="#001a2d" style="padding:28px 24px 26px;background-color:#001a2d;background-image:linear-gradient(#001a2d,#001a2d);color:#d4dde3;font:12px/1.7 Arial,sans-serif;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <!-- start text/html -->
+                  <tr>
+                    <td class="footer-logo" width="43%" valign="top" style="display:block;width:100%;padding:0 0 20px;"><a href="https://bennettlegal.com/"><img src="<%= brand %>/footer-logo.png" width="176" alt="Bennett Legal" style="display:block;width:176px;max-width:100%;height:auto;border:0;"></a></td>
+                    <td class="footer-details" valign="top" style="display:block;width:100%;padding:0;"><div class="gmail-screen" style="display:inline-block;"><div class="gmail-difference" style="display:inline-block;"><p style="margin:0 0 9px;"><a class="footer-address" href="https://www.google.com/maps/search/?api=1&amp;query=12770%20Coit%20Road%20Suite%20720%20Dallas%20TX%2075251" style="color:#d4dde3;text-decoration:none;">12770 Coit Road, Suite 720<br>Dallas, TX 75251</a></p><p style="margin:0;"><a class="footer-link" href="tel:+19729724969" style="color:#dcc68f;text-decoration:none;">972-972-4969</a><br><a class="footer-link" href="mailto:solar@bennettlegal.com" style="color:#dcc68f;text-decoration:none;">solar@bennettlegal.com</a></p></div></div></td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="padding:18px 0 0;"><div style="border-top:1px solid #455045;padding-top:16px;"><% [%w[LinkedIn linkedin https://www.linkedin.com/company/bennettlegal/], %w[Instagram instagram https://www.instagram.com/bennettlegal/], %w[Facebook facebook https://www.facebook.com/bennettlegalus/], %w[YouTube youtube https://www.youtube.com/@BennettLegal]].each do |label, icon, url| %><a href="<%= url %>" style="display:inline-block;margin-right:17px;text-decoration:none;color:#dcc68f;"><img src="<%= brand %>/<%= icon %>-gold.png" width="19" height="19" alt="<%= label %>" style="display:block;width:19px;height:19px;border:0;"></a><% end %></div></td>
+                  </tr>
+                  <!-- end text/html -->
+                  <tr>
+                    <td colspan="2" style="padding:16px 0 0;">
+                      <%= render partial: 'shared/mailer_attribution' %>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </table>
