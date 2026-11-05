@@ -6,7 +6,7 @@
     fix) and the desktop gutters. Anything between the text/html markers stays out of
     the plain-text part (lib/html_to_plain_text.rb), so the stylesheet never leads it. %>
 <% es = I18n.locale.to_s.start_with?('es') %>
-<% brand = 'https://clients.bennettlegal.com/brand/nurture' %>
+<% logo_url = attachments['bennett-mail-footer-logo.png'].url %>
 <% signing = controller.is_a?(SubmitterMailer) || controller.is_a?(TemplateMailer) %>
 <%# Staff notices (completed, declined) and account mail carry the address only. %>
 <% to_signer = signing && !controller.action_name.in?(%w[completed_email declined_email]) %>
@@ -69,7 +69,7 @@
           <table role="presentation" width="680" cellspacing="0" cellpadding="0" border="0" class="email-paper" bgcolor="#fcfaf5" style="width:100%;max-width:680px;background-color:#fcfaf5;">
             <tr>
               <td class="inset email-header navy-surface" bgcolor="#001a2d" style="padding:28px 24px 0;text-align:center;background-color:#001a2d;background-image:linear-gradient(#001a2d,#001a2d);">
-                <!-- start text/html --><a href="https://bennettlegal.com/" style="display:inline-block;margin:0 auto 24px;text-decoration:none;"><img src="<%= brand %>/footer-logo.png" alt="Bennett Legal" width="216" style="display:block;width:216px;max-width:100%;height:auto;border:0;color:#ffffff;background-color:#001a2d;"></a><!-- end text/html -->
+                <!-- start text/html --><a href="https://bennettlegal.com/" style="display:inline-block;margin:0 auto 24px;text-decoration:none;"><img src="<%= logo_url %>" alt="Bennett Legal" width="216" style="display:block;width:216px;max-width:100%;height:auto;border:0;color:#ffffff;background-color:#001a2d;"></a><!-- end text/html -->
                 <div class="email-rule" style="border-bottom:1px solid #d4c395;text-align:left;"><p class="video-kicker" style="margin:0 0 16px;font:bold 10px/1.6 Arial,sans-serif;letter-spacing:2.2px;color:#d5b05b;"><span class="gmail-screen" style="display:inline-block;"><span class="gmail-difference" style="display:inline-block;"><%= eyebrow %></span></span></p></div>
               </td>
             </tr>
@@ -91,11 +91,11 @@
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <!-- start text/html -->
                   <tr>
-                    <td class="footer-logo" width="43%" valign="top" style="display:block;width:100%;padding:0 0 20px;"><a href="https://bennettlegal.com/"><img src="<%= brand %>/footer-logo.png" width="176" alt="Bennett Legal" style="display:block;width:176px;max-width:100%;height:auto;border:0;"></a></td>
+                    <td class="footer-logo" width="43%" valign="top" style="display:block;width:100%;padding:0 0 20px;"><a href="https://bennettlegal.com/"><img src="<%= logo_url %>" width="176" alt="Bennett Legal" style="display:block;width:176px;max-width:100%;height:auto;border:0;"></a></td>
                     <td class="footer-details" valign="top" style="display:block;width:100%;padding:0;"><div class="gmail-screen" style="display:inline-block;"><div class="gmail-difference" style="display:inline-block;"><p style="margin:0 0 9px;"><a class="footer-address" href="https://www.google.com/maps/search/?api=1&amp;query=12770%20Coit%20Road%20Suite%20720%20Dallas%20TX%2075251" style="color:#d4dde3;text-decoration:none;">12770 Coit Road, Suite 720<br>Dallas, TX 75251</a></p><p style="margin:0;"><a class="footer-link" href="tel:+19729724969" style="color:#dcc68f;text-decoration:none;">972-972-4969</a><br><a class="footer-link" href="mailto:solar@bennettlegal.com" style="color:#dcc68f;text-decoration:none;">solar@bennettlegal.com</a></p></div></div></td>
                   </tr>
                   <tr>
-                    <td colspan="2" style="padding:18px 0 0;"><div style="border-top:1px solid #455045;padding-top:16px;"><% [%w[LinkedIn linkedin https://www.linkedin.com/company/bennettlegal/], %w[Instagram instagram https://www.instagram.com/bennettlegal/], %w[Facebook facebook https://www.facebook.com/bennettlegalus/], %w[YouTube youtube https://www.youtube.com/@BennettLegal]].each do |label, icon, url| %><a href="<%= url %>" style="display:inline-block;margin-right:17px;text-decoration:none;color:#dcc68f;"><img src="<%= brand %>/<%= icon %>-gold.png" width="19" height="19" alt="<%= label %>" style="display:block;width:19px;height:19px;border:0;"></a><% end %></div></td>
+                    <td colspan="2" style="padding:18px 0 0;"><div style="border-top:1px solid #455045;padding-top:16px;"><% [%w[LinkedIn linkedin https://www.linkedin.com/company/bennettlegal/], %w[Instagram instagram https://www.instagram.com/bennettlegal/], %w[Facebook facebook https://www.facebook.com/bennettlegalus/], %w[YouTube youtube https://www.youtube.com/@BennettLegal]].each do |label, icon, url| %><a href="<%= url %>" style="display:inline-block;margin-right:17px;text-decoration:none;color:#dcc68f;"><img src="<%= attachments["bennett-mail-#{icon}-gold.png"].url %>" width="19" height="19" alt="<%= label %>" style="display:block;width:19px;height:19px;border:0;"></a><% end %></div></td>
                   </tr>
                   <!-- end text/html -->
                   <tr>
