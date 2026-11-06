@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PDFDocument } from 'pdf-lib';
 import { chromium } from 'playwright';
+import { emailWithInlineAssets } from './mail-assets.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIR = process.env.SMOKE_DIR;
@@ -256,10 +257,11 @@ const signerLink = message => (message.HTML + message.Text).match(new RegExp(`ht
 // data-ogsc/data-ogsb rules, without horizontal overflow on a phone.
 async function letterhead(label, message) {
   const html = message.HTML ?? '';
+  const renderable = await emailWithInlineAssets(message);
   const text = (message.Text ?? '').trimStart();
   const eyebrow = /^Su /.test(message.Subject) ? 'CONTRATO DE SERVICIOS LEGALES' : 'RETAINER AGREEMENT';
   const absent = ['<meta name="color-scheme" content="light dark">', '@media (prefers-color-scheme:dark)', '[data-ogsc] .email-paper',
-    'background-image:linear-gradient(#001a2d,#001a2d)', 'https://clients.bennettlegal.com/brand/nurture/footer-logo.png',
+    'background-image:linear-gradient(#001a2d,#001a2d)', 'src="cid:',
     'docuseal.com/open'].filter(needle => !html.includes(needle));
   const context = await browser.newContext({ viewport: { width: 390, height: 900 } });
   try {
@@ -267,12 +269,13 @@ async function letterhead(label, message) {
     await page.route('**/*', route => route.abort());
     const paint = async (colorScheme, outlook = false) => {
       await page.emulateMedia({ colorScheme });
-      await page.setContent(html, { waitUntil: 'load' });
+      await page.setContent(renderable, { waitUntil: 'load' });
       if (outlook) await page.evaluate(() => document.querySelectorAll('*').forEach(element => {
         element.setAttribute('data-ogsc', '');
         element.setAttribute('data-ogsb', '');
       }));
       return page.evaluate(() => ({ paper: getComputedStyle(document.querySelector('.email-paper')).backgroundColor,
+        imagesLoaded: [...document.images].every(image => image.complete && image.naturalWidth > 0),
         overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth }));
     };
     const light = await paint('light');
@@ -281,7 +284,7 @@ async function letterhead(label, message) {
     await page.screenshot({ path: join(OUT, `email-${label.replaceAll(' ', '-')}-dark.png`), fullPage: true }).catch(() => undefined);
     check(`${label} uses the Bennett letterhead (light, dark and Outlook dark mode)`, !absent.length && text.startsWith(eyebrow)
       && !text.includes('{') && light.paper === 'rgb(252, 250, 245)' && dark.paper === 'rgb(20, 35, 48)'
-      && outlook.paper === 'rgb(20, 35, 48)' && ![light, dark, outlook].some(state => state.overflow),
+      && outlook.paper === 'rgb(20, 35, 48)' && ![light, dark, outlook].some(state => state.overflow || !state.imagesLoaded),
     { absent, text: text.slice(0, 40), light, dark, outlook });
   } finally {
     await context.close();

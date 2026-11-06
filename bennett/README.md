@@ -11,7 +11,7 @@ This fork builds the production DocuSeal image for Bennett Legal's retainer sign
 | `puma.rb`, `storage.yml` | Upstream Puma config with a configurable bind; private cache metadata for stored objects |
 | `rds-global-bundle.pem`, `ca-provenance.json` | Public AWS RDS trust anchors |
 | `NOTICE.md` | Modification and source notice, shipped in the image |
-| `test/` | Bennett tests: `ruby bennett/test/run.rb`, plus `node bennett/test/branding_layout.test.cjs` (Playwright) |
+| `test/` | Bennett tests: `ruby bennett/test/run.rb`, `node --test bennett/test/mail_assets.test.mjs`, plus `node bennett/test/branding_layout.test.cjs` (Playwright) |
 | `ci/` | The nightly pipeline's scripts and the production-mode smoke test |
 
 ## Build locally
@@ -34,7 +34,7 @@ ruby bennett/test/run.rb
    - the practice-stamp `PUT /api/templates/:id` and its re-read;
    - the gateway's refusals and headers, and the signer assets it serves;
    - a Spanish client and an attorney signing in headless Chromium through the gateway, including the email codes, the recipient-order patch refusing the attorney's early write, the signed PDF with its digital signature, the audit log, the signed webhooks and the signed-copy email;
-   - every email it receives: the intake nurture letterhead in light mode, dark mode and Outlook's dark mode (painted in the browser, with a dark screenshot saved), DocuSeal's attribution, and a plain-text part that starts with the eyebrow rather than the stylesheet.
+   - every email it receives: the intake nurture letterhead in light mode, dark mode and Outlook's dark mode (painted in the browser, with a dark screenshot saved), DocuSeal's attribution, and a plain-text part that starts with the eyebrow rather than the stylesheet. The logo and social icons are inline MIME attachments from `public/packs/bennett-mail-*.png`; no remote image download is required. Before rendering, the test retrieves the actual Mailpit parts, checks their bytes against that artwork, and confirms every image loads with networking blocked. A separate Rails check serializes and reparses 14 mail types, including English/Spanish invitations and copies, OTP, staff and account messages, without delivering them. These checks do not replace verification in an actual Outlook inbox.
 5. Publishes only if all of that passed, from `bennett-legal`, with the AWS role: it pushes the tested image to ECR as `bl-<commit>`. The `publish` job then pushes the merge to `bennett-legal` (fast-forward only) and tags the same digest `verified-<yyyymmdd>-<commit>` in ECR and in git.
 
 A commit that already has a verified image is rebuilt every night but republished only once a week, for current Alpine packages. Without the AWS role the run still merges, tests, builds, scans and smoke-tests, but with the edge talking to DocuSeal directly (no gateway checks), and publishes nothing.

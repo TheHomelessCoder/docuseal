@@ -70,7 +70,7 @@ class BrandingTest < Minitest::Test
      ':root{color-scheme:light dark;supported-color-schemes:light dark}', 'u + .email-body .gmail-difference',
      'class="email-body email-page"', 'class="email-paper" bgcolor="#fcfaf5"', 'class="email-page" bgcolor="#f0f1f1"',
      'class="inset email-header navy-surface" bgcolor="#001a2d"', 'class="inset email-disclosure" bgcolor="#efefed"',
-     'class="inset contact-footer navy-surface" bgcolor="#001a2d"', 'https://clients.bennettlegal.com/brand/nurture',
+     'class="inset contact-footer navy-surface" bgcolor="#001a2d"', "attachments['bennett-mail-footer-logo.png'].url",
      'tel:+19729724969', 'mailto:solar@bennettlegal.com', "'RETAINER AGREEMENT'", "'CONTRATO DE SERVICIOS LEGALES'",
      "render partial: 'shared/mailer_attribution'"].each { |needle| assert MAILER.include?(needle), "letterhead lost #{needle}" }
     # Outlook recolours navy surfaces unless they carry a background image.

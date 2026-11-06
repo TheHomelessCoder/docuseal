@@ -96,6 +96,11 @@ unset DOCUSEAL_BOOTSTRAP_JSON
 echo "$bootstrap"
 echo "$bootstrap" | grep -q '"setup":"done"'
 
+step "verify serialized email images and plain-text/PDF parts (no delivery)"
+mail_assets=$(rails_runner mail_assets.rb)
+echo "$mail_assets"
+echo "$mail_assets" | grep -q '"mail_assets":"passed"'
+
 step "seed the synthetic retainer template, import draft and JUD webhook"
 CI_WEBHOOK_URL=http://jud:8090/webhooks/docuseal CI_WEBHOOK_SECRET=$(setting CI_WEBHOOK_SECRET)
 export CI_WEBHOOK_URL CI_WEBHOOK_SECRET

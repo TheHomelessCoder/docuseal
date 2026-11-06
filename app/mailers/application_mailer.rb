@@ -14,6 +14,10 @@ class ApplicationMailer < ActionMailer::Base
     ActiveStorage::Current.url_options = Docuseal.default_url_options
   end
 
+  # Carry the letterhead with the message. Mail clients can block or proxy remote
+  # images independently of the signing service; no HTTP request is needed here.
+  before_action :attach_bennett_brand_images
+
   after_action :set_message_metadata
   after_action :set_message_uuid
 
@@ -39,5 +43,17 @@ class ApplicationMailer < ActionMailer::Base
 
   def put_metadata(attrs)
     @message_metadata = (@message_metadata || {}).merge(attrs)
+  end
+
+  private
+
+  def attach_bennett_brand_images
+    %w[footer-logo linkedin-gold instagram-gold facebook-gold youtube-gold].each do |name|
+      filename = "bennett-mail-#{name}.png"
+      attachments.inline[filename] = {
+        mime_type: 'image/png',
+        content: File.binread(Rails.root.join('public', 'packs', filename))
+      }
+    end
   end
 end
