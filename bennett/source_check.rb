@@ -29,6 +29,10 @@ module BennettSourceCheck
   # The prefill route reads the signer's verification cookie.
   COOKIES = %w[app/controllers/submit_form_prefill_attachments_controller.rb].freeze
   ATTRIBUTION = {
+    'app/views/layouts/application.html.erb' => ["render 'shared/bennett_staff_footer'"],
+    'app/views/layouts/plain.html.erb' => ["render 'shared/bennett_staff_footer'"],
+    'app/views/shared/_bennett_staff_footer.html.erb' =>
+      ["t('powered_by')", 'Docuseal::PRODUCT_URL', 'Docuseal.product_name', "render 'shared/logo'"],
     'app/views/shared/_bennett_signing_masthead.html.erb' =>
       ["t('powered_by')", 'Docuseal::PRODUCT_URL', 'Docuseal.product_name'],
     'app/views/start_form/_banner.html.erb' => ["render 'shared/bennett_signing_masthead'"],
@@ -36,6 +40,13 @@ module BennettSourceCheck
     'app/views/layouts/mailer.html.erb' => ["render partial: 'shared/mailer_attribution'"],
     'app/views/shared/_mailer_attribution.html.erb' =>
       ['sent_using_product_name_open_source_software_html', 'Docuseal::PRODUCT_EMAIL_URL', 'Docuseal.product_name']
+  }.freeze
+  STAFF_AUTH = {
+    'app/controllers/application_controller.rb' => ['include BennettStaffAuthentication'],
+    'app/controllers/concerns/bennett_staff_authentication.rb' =>
+      ['prepend_before_action :authenticate_bennett_staff!', 'active_for_authentication?', 'otp_required_for_login?'],
+    'app/controllers/sessions_controller.rb' => ['bennett_staff?', "'/cdn-cgi/access/logout'"],
+    'lib/bennett/staff_access.rb' => ['JWT.decode', "algorithms: ['RS256']", 'verify_iss: true', 'verify_aud: true']
   }.freeze
   LICENSES = %w[LICENSE LICENSE_ADDITIONAL_TERMS].freeze
   AUTHORIZE = 'Submitters::AuthorizedForForm'
@@ -59,17 +70,23 @@ module BennettSourceCheck
       end
     end
     VIEWER_GUARDS.each do |path, name|
-      raise Failure, "#{path}##{name}: viewers are not refused" unless refuses_viewer?(find_def(parse(root, path), name, path))
+      raise Failure, "#{path}##{name}: viewers are not refused" unless refuses_viewer?(find_def(parse(root, path),
+                                                                                                name, path))
     end
     COOKIES.each do |path|
       raise Failure, "#{path}: verification cookie not readable" unless includes_cookies?(parse(root, path))
     end
-    ATTRIBUTION.each do |path, needles|
-      text = read(root, path)
-      needles.each { |needle| raise Failure, "#{path}: attribution missing (#{needle})" unless text.include?(needle) }
-    end
+    verify_tokens!(root, ATTRIBUTION, 'attribution')
+    verify_tokens!(root, STAFF_AUTH, 'staff authentication')
     LICENSES.each { |path| raise Failure, "#{path} missing" if read(root, path).strip.empty? }
     true
+  end
+
+  def verify_tokens!(root, groups, label)
+    groups.each do |path, needles|
+      text = read(root, path)
+      needles.each { |needle| raise Failure, "#{path}: #{label} missing (#{needle})" unless text.include?(needle) }
+    end
   end
 
   def read(root, path)

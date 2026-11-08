@@ -10,7 +10,7 @@ require_relative '../source_check'
 module BennettTest
   ROOT = File.expand_path('../..', __dir__)
   CHECKED = (BennettSourceCheck::ORDERED.keys | BennettSourceCheck::VIEWER_GUARDS.keys | BennettSourceCheck::COOKIES |
-             BennettSourceCheck::ATTRIBUTION.keys | BennettSourceCheck::LICENSES).freeze
+             BennettSourceCheck::ATTRIBUTION.keys | BennettSourceCheck::STAFF_AUTH.keys | BennettSourceCheck::LICENSES).freeze
 
   module_function
 

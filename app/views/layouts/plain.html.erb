@@ -11,12 +11,15 @@
       <%= javascript_pack_tag 'application', defer: true %>
     <% end %>
     <%= stylesheet_pack_tag 'application', media: 'all', data: { turbo_track: 'dynamic' } %>
+    <%= render 'shared/bennett_staff_assets' if bennett_staff? %>
   </head>
-  <body>
+  <body class="<%= 'bennett-staff' if bennett_staff? %>">
+    <%= render 'shared/bennett_staff_navbar' if bennett_staff? && !turbo_frame_request? %>
     <main>
       <%= yield %>
     </main>
     <turbo-frame id="modal"></turbo-frame>
     <% if flash.present? %><%= render 'shared/flash' %><% end %>
+    <%= render 'shared/bennett_staff_footer' if bennett_staff? && !turbo_frame_request? %>
   </body>
 </html>

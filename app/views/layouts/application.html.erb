@@ -19,8 +19,11 @@
       <link href="<%= canonical_url %>" rel="canonical">
     <% end %>
     <%= stylesheet_pack_tag 'application', media: 'all', data: { turbo_track: 'dynamic' } %>
+    <% if bennett_staff? %>
+      <%= render 'shared/bennett_staff_assets' %>
+    <% end %>
   </head>
-  <body>
+  <body class="<%= 'bennett-staff' if bennett_staff? %>">
     <% if params[:modal].present? %>
       <% modal_uri = Addressable::URI.parse(params[:modal]) %>
       <% url_params = Rails.application.routes.recognize_path(modal_uri.path, method: :get) %>
@@ -32,11 +35,18 @@
       <turbo-frame id="modal"></turbo-frame>
     <% end %>
     <turbo-frame id="drawer"></turbo-frame>
-    <%= render turbo_native_app? ? 'shared/native_navbar' : 'shared/navbar' %>
+    <% if bennett_staff? %>
+      <%= render 'shared/bennett_staff_navbar' %>
+    <% else %>
+      <%= render turbo_native_app? ? 'shared/native_navbar' : 'shared/navbar' %>
+    <% end %>
     <main class="max-w-6xl mx-auto px-4 md:px-2 mb-8">
       <%= yield %>
     </main>
     <% if flash.present? %><%= render 'shared/flash' %><% end %>
     <%= render 'shared/body_scripts' %>
+    <% if bennett_staff? %>
+      <%= render 'shared/bennett_staff_footer' %>
+    <% end %>
   </body>
 </html>

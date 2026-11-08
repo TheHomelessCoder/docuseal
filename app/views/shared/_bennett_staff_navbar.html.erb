@@ -1,0 +1,30 @@
+<header class="bennett-staff-header">
+  <div class="bennett-staff-topbar">
+    <a class="bennett-staff-brand" href="https://jud.bennettlegal.com/admin/retainers">
+      <img src="/packs/bennett-legal-logo-white.png" width="512" height="220" alt="Bennett Legal">
+      <span>Signing</span>
+    </a>
+    <div class="bennett-staff-account">
+      <label class="bennett-staff-appearance">Appearance
+        <select data-staff-theme aria-label="Appearance">
+          <option value="system">System</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+      <% if bennett_staff_signed_in? %>
+        <span class="bennett-staff-user"><%= true_user.full_name.presence || true_user.email %></span>
+        <%= button_to t('sign_out'), destroy_user_session_path, method: :delete, class: 'bennett-staff-signout', form: { data: { turbo: false } } %>
+      <% end %>
+    </div>
+  </div>
+  <nav class="bennett-staff-nav" aria-label="Signing workspace">
+    <a href="https://jud.bennettlegal.com/admin/retainers">JUD retainers</a>
+    <% if bennett_staff_signed_in? %>
+      <%= link_to 'All submissions', submissions_path, aria: { current: ('page' if request.path.start_with?('/submissions') && params[:status] != 'completed') } %>
+      <%= link_to 'Completed', submissions_path(status: 'completed'), aria: { current: ('page' if request.path == submissions_path && params[:status] == 'completed') } %>
+      <%= link_to 'Templates', root_path, aria: { current: ('page' if request.path == root_path) } %>
+      <a href="<%= settings_profile_index_path %>">Settings</a>
+    <% end %>
+  </nav>
+</header>

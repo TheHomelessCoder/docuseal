@@ -103,6 +103,7 @@ jobs:
         run: |
           node --test bennett/test/mail_assets.test.mjs
           node bennett/test/branding_layout.test.cjs
+          node bennett/test/staff_layout.test.cjs
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
