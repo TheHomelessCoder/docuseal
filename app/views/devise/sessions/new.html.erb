@@ -2,6 +2,9 @@
 <div class="max-w-lg mx-auto px-2">
   <%= render 'devise/shared/select_server' if Docuseal.multitenant? %>
   <h1 class="text-4xl font-bold text-center mt-8"><%= t('sign_in') %></h1>
+  <% if bennett_staff? && bennett_staff_password_required? %>
+    <p class="mt-4">Your account requires additional verification. Enter your DocuSeal password, then your authenticator code.</p>
+  <% end %>
   <%= form_for(resource, as: resource_name, html: { class: 'space-y-6' }, data: { turbo: params[:redir].blank? }, url: session_path(resource_name)) do |f| %>
     <%= render 'hidden_fields' %>
     <div class="space-y-2" dir="auto">

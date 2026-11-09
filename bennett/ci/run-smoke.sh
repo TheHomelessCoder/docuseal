@@ -96,6 +96,13 @@ unset DOCUSEAL_BOOTSTRAP_JSON
 echo "$bootstrap"
 echo "$bootstrap" | grep -q '"setup":"done"'
 
+step "verify staff authentication with real signatures and Rails sessions"
+docker exec -i -w /app "$("${compose[@]}" ps -q docuseal)" \
+  bundle exec ruby -r ./lib/bennett/staff_access - < "$here/../test/staff_access.rb"
+staff_access=$(rails_runner staff_access.rb)
+echo "$staff_access"
+echo "$staff_access" | grep -q '"staff_access":"passed"'
+
 step "verify serialized email images and plain-text/PDF parts (no delivery)"
 mail_assets=$(rails_runner mail_assets.rb)
 echo "$mail_assets"

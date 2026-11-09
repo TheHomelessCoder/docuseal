@@ -14,6 +14,25 @@ This fork builds the production DocuSeal image for Bennett Legal's retainer sign
 | `test/` | Bennett tests: `ruby bennett/test/run.rb`, `node --test bennett/test/mail_assets.test.mjs`, plus `node bennett/test/branding_layout.test.cjs` (Playwright) |
 | `ci/` | The nightly pipeline's scripts and the production-mode smoke test |
 
+## Staff sign-in
+
+The staff workspace can use the same Cloudflare Access email-code login type as JUD, with no second DocuSeal password for an account without native authenticator verification. This is an explicit host deployment selection:
+
+```sh
+BENNETT_STAFF_ACCESS_ENABLED=true
+BENNETT_STAFF_ACCESS_HOST=sign-staff.bennettlegal.com
+BENNETT_STAFF_ACCESS_TEAM=bennettlaw
+BENNETT_STAFF_ACCESS_AUD=<the staff application's 64-character audience tag>
+```
+
+The gateway must forward only the assertion it has verified for the staff host. Rails independently verifies RS256 signatures against the fixed team's HTTPS certificate endpoint, issuer, staff audience, expiry, issued-at, human email and application-token type. Native administration requires a matching existing active user and account. Account permissions and lockouts remain authoritative; no user is automatically created. A configured native authenticator still requires its existing password and code. Cookies or an asserted email header alone cannot grant staff access. Sign-out clears the native session and goes to Cloudflare's logout endpoint. Incomplete enabled configuration fails at boot. With the selection off, upstream authentication remains available.
+
+Every active Bennett Legal JUD user can review signing documents and audit history at `https://jud.bennettlegal.com/retainers`. An Access-authenticated staff viewer without a native account is sent there for JUD's own active-account authorization. No separate native account is needed for viewing, and no native editing permissions are created. The Access application uses JUD's managed staff group while retaining its own twelve-hour session lifetime.
+
+For an existing active native account, email verification at `/sign_in` opens `/submissions`. The staff header links to **JUD retainers**, **All submissions**, **Completed**, templates and settings. Submission details and event timelines use the same staff theme; frame/modal responses retain their existing behavior. Appearance can follow the system or use light/dark mode. DocuSeal's logo and attribution remain visible.
+
+Validation includes `bundle exec ruby bennett/test/staff_access.rb` (real RSA/JWT checks), `node bennett/test/staff_layout.test.cjs` (the real navbar ERB and theme assets at mobile/desktop widths), and `bennett/ci/rails/staff_access.rb` in the production-mode smoke stack. The latter checks actual Rails/Devise sessions, CSRF, logout, revoked users and the authenticator flow inside a rolled-back synthetic transaction. No real email or document is used.
+
 ## Build locally
 
 ```sh

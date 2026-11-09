@@ -9,7 +9,19 @@ class SessionsController < Devise::SessionsController
 
   around_action :with_browser_locale
 
+  def new
+    return redirect_to submissions_path if bennett_staff? && !bennett_staff_password_required?
+
+    super
+  end
+
   def create
+    if bennett_staff?
+      return redirect_to submissions_path if !bennett_staff_password_required? || bennett_staff_signed_in?
+
+      raise Bennett::StaffAccess::Denied unless sign_in_params[:email].to_s.downcase == @bennett_staff_user.email
+    end
+
     email = sign_in_params[:email].to_s.downcase
 
     if Docuseal.multitenant? && !User.exists?(email:)
@@ -42,7 +54,21 @@ class SessionsController < Devise::SessionsController
 
   private
 
+  def require_no_authentication
+    return if bennett_staff?
+
+    super
+  end
+
+  def after_sign_out_path_for(*)
+    return '/cdn-cgi/access/logout' if bennett_staff?
+
+    super
+  end
+
   def after_sign_in_path_for(...)
+    return submissions_path if bennett_staff?
+
     if params[:redir].present?
       return console_redirect_index_path(redir: params[:redir]) if params[:redir].starts_with?(Docuseal::CONSOLE_URL)
 

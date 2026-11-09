@@ -21,10 +21,23 @@ class SourceCheckTest < Minitest::Test
     assert BennettSourceCheck.verify!(@root)
   end
 
+  def test_staff_identity_checks_survive_upstream_merges
+    BennettSourceCheck::STAFF_AUTH.each do |file, needles|
+      needles.each do |needle|
+        original = File.read(File.join(@root, file))
+        BennettTest.edit(@root, file) { |text| text.gsub(needle, 'removed staff guard') }
+        refused(/staff authentication missing/)
+        File.write(File.join(@root, file), original)
+      end
+    end
+  end
+
   def test_each_mutation_without_recipient_order_is_refused
     BennettSourceCheck::ORDERED.each_key do |file|
       original = File.read(File.join(@root, file))
       BennettTest.edit(@root, file) { |text| text.gsub(/,\s*with_order: true/, '') }
+      # Plain Minitest does not load ActiveSupport's assertion aliases.
+      # rubocop:disable-next Rails/RefuteMethods
       refute_equal original, File.read(File.join(@root, file)), file
       refused(/with_order|recipient-order/)
       File.write(File.join(@root, file), original)
@@ -33,13 +46,16 @@ class SourceCheckTest < Minitest::Test
   end
 
   def test_with_order_false_is_not_enough
-    BennettTest.edit(@root, 'app/controllers/submit_form_decline_controller.rb') { |text| text.sub('with_order: true', 'with_order: false') }
+    BennettTest.edit(@root, 'app/controllers/submit_form_decline_controller.rb') do |text|
+      text.sub('with_order: true', 'with_order: false')
+    end
     refused(/with_order/)
   end
 
   def test_a_new_unordered_authorization_in_a_signer_controller_is_refused
     BennettTest.edit(@root, 'app/controllers/submit_form_upload_controller.rb') do |text|
-      text.sub(/\nend\s*\z/, "\n\n  def synthetic_new_route\n    Submitters::AuthorizedForForm.call(@submitter, current_user, request)\n  end\nend\n")
+      call = 'Submitters::AuthorizedForForm.call(@submitter, current_user, request)'
+      text.sub(/\nend\s*\z/, "\n\n  def synthetic_new_route\n    #{call}\n  end\nend\n")
     end
     refused(/synthetic_new_route/)
   end
