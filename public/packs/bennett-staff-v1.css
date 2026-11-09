@@ -157,6 +157,16 @@ body.bennett-staff { margin: 0; min-height: 100vh; background: var(--staff-page)
 }
 .bennett-staff .bennett-status-tab { width: auto; min-width: 100px; height: 36px; padding: 6px 12px; border-radius: 6px; font-size: 12px; border-color: var(--staff-border); color: var(--staff-secondary); background: transparent; }
 .bennett-staff .bennett-status-tab.border-neutral-700 { color: var(--staff-text); border-color: var(--staff-strong); background: var(--staff-muted); }
+.bennett-staff .bennett-submissions-header { flex-wrap: wrap; gap: 12px; align-items: center; }
+.bennett-staff .bennett-submissions-search-row { display: flex; flex: 1; min-width: min(240px, 100%); flex-wrap: wrap; gap: 8px; }
+.bennett-staff .bennett-submissions-search-row > * { margin-left: 0; }
+.bennett-staff .bennett-submission-search { flex: 1 1 240px; min-width: 0; }
+.bennett-staff .bennett-submission-search > .relative { align-self: stretch; }
+.bennett-staff .bennett-submission-search search-input { width: 100%; min-width: 0; flex: 1; }
+.bennett-staff .bennett-submission-search input[name='q'] { width: 100%; min-width: 0; padding-right: 44px; margin-right: -36px; font-size: 14px; }
+.bennett-staff .bennett-submission-search button { flex: none; width: 36px; height: 36px; padding: 8px; }
+.bennett-staff .bennett-submission-filters native-menu > label { height: 36px; min-height: 36px; padding: 6px 10px; border-radius: 6px; font-size: 12px; border-color: var(--staff-strong); }
+.bennett-staff .bennett-submissions-empty { padding: 32px 0; color: var(--staff-secondary); }
 .bennett-staff .bennett-event-timeline li > span { color: #1e293b; }
 .bennett-staff .bennett-staff-dialog { background: var(--staff-surface); color: var(--staff-text); border: 1px solid var(--staff-strong); border-radius: 10px; margin: 24px 16px; min-height: 0; max-height: calc(100dvh - 48px); max-width: min(42rem, calc(100vw - 32px)); box-shadow: 0 16px 48px #0004; overflow-y: auto; }
 .bennett-staff .bennett-staff-dialog > div { max-width: 100%; }

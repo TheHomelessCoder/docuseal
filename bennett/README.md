@@ -33,6 +33,8 @@ For an existing active native account, email verification at `/sign_in` opens `/
 
 The staff interface uses JUD's compact navigation, page headings, Inter/system font stack and slate/charcoal surfaces. Templates and submissions appear as flat lists. Settings retain their permission-aware navigation, with a horizontal menu on phones. The editor, document viewer, menus, dialogs and event history share the same controls and appearance preference. Dialogs contain focus and restore it to their trigger. Staff asset URLs carry a revision query so a browser does not retain an older theme after an update.
 
+Search and status/date/author/folder filters stay available on staff submission lists, including small or empty lists, completed submissions, archives and each template's submissions. Queries run across the authorized records before pagination; changing a search or filter starts from the first page. The submissions dashboard reviews existing signing requests and has no template-upload, template-create or document-dropzone prompt. Template management remains under Templates.
+
 Validation includes `bundle exec ruby bennett/test/staff_access.rb` (real RSA/JWT checks), `node bennett/test/staff_layout.test.cjs` (the real navbar ERB and theme assets at mobile/desktop widths), and `bennett/ci/rails/staff_access.rb` in the production-mode smoke stack. The latter checks actual Rails/Devise sessions, CSRF, logout, revoked users, the authenticator flow and rendering of the template, editor and settings sections inside a rolled-back synthetic transaction. No real email or document is used.
 
 ## Build locally
