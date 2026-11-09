@@ -62,9 +62,9 @@
           </div>
           <% if can_edit || can_remove || can_unarchive %>
             <native-menu class="<%= 'dropdown dropdown-end' unless turbo_native_app? %>">
-              <label tabindex="0" aria-label="<%= t('more') %>" class="btn btn-ghost btn-circle btn-sm">
+              <button type="button" aria-label="<%= t('more') %>" class="btn btn-ghost btn-circle btn-sm">
                 <%= svg_icon('dots_vertical', class: 'w-5 h-5') %>
-              </label>
+              </button>
               <ul tabindex="0" class="<%= turbo_native_app? ? 'hidden' : 'z-10 dropdown-content p-2 mt-2 shadow menu bg-base-100 rounded-box' %>" style="min-width: 160px;">
                 <% if can_edit %>
                   <li>
@@ -122,6 +122,7 @@
                 <%= t('last_session') %>
               </th>
               <th class="text-right" width="1px">
+                <span class="sr-only"><%= t('actions') %></span>
               </th>
             </tr>
           </thead>

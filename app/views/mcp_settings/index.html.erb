@@ -60,6 +60,7 @@
               <%= t('created_at') %>
             </th>
             <th class="text-right" width="1px">
+              <span class="sr-only"><%= t('actions') %></span>
             </th>
           </tr>
         </thead>
@@ -103,7 +104,7 @@
             </span>
           </div>
           <submit-form data-on="change" class="flex">
-            <%= f.check_box :value, class: 'toggle', checked: account_config.value == true %>
+            <%= f.check_box :value, 'aria-label': t('enable_mcp_server'), class: 'toggle', checked: account_config.value == true %>
           </submit-form>
         </div>
       <% end %>

@@ -12,7 +12,7 @@
         </p>
       </div>
       <%= form_for '', url: verify_pdf_signature_index_path, method: :post, html: { enctype: 'multipart/form-data' } do |f| %>
-        <%= f.button type: 'submit', class: 'flex' do %>
+        <%= f.button type: 'submit', 'aria-label': t('upload_signed_pdf_file_to_validate_its_signature_'), class: 'flex' do %>
           <div class="disabled mb-3">
             <%= svg_icon('loader', class: 'w-5 h-5 animate-spin inline') %>
             <%= "#{t('analyzing')}..." %>
@@ -47,7 +47,7 @@
         <%= t('signing_certificates') %>
       </h2>
       <% if can?(:create, @encrypted_config) %>
-        <%= link_to new_settings_esign_path, class: 'btn btn-primary btn-md', aria: { label: t('upload_certificate') }, data: { turbo_frame: 'modal' } do %>
+        <%= link_to new_settings_esign_path, class: 'btn btn-primary btn-md', aria: { label: t('upload_cert') }, data: { turbo_frame: 'modal' } do %>
           <%= svg_icon('plus', class: 'w-6 h-6') %>
           <span><%= t('upload_cert') %></span>
         <% end %>
@@ -68,6 +68,7 @@
               <%= t('status') %>
             </th>
             <th class="text-right" width="1px">
+              <span class="sr-only"><%= t('actions') %></span>
             </th>
           </tr>
         </thead>
@@ -151,7 +152,7 @@
                 <%= t('apply_multiple_pdf_digital_signatures_in_the_document_per_each_signer') %>
               </span>
               <submit-form data-on="change" class="flex">
-                <%= f.check_box :value, { class: 'toggle', checked: account_config.value == 'multiple' }, 'multiple', 'single' %>
+                <%= f.check_box :value, { 'aria-label': t('apply_multiple_pdf_digital_signatures_in_the_document_per_each_signer'), class: 'toggle', checked: account_config.value == 'multiple' }, 'multiple', 'single' %>
               </submit-form>
             </div>
           <% end %>
@@ -165,7 +166,7 @@
                 <%= t('remove_pdf_form_fillable_fields_from_the_signed_pdf_flatten_form') %>
               </span>
               <submit-form data-on="change" class="flex">
-                <%= f.check_box :value, { class: 'toggle', checked: account_config.value != false } %>
+                <%= f.check_box :value, { 'aria-label': t('remove_pdf_form_fillable_fields_from_the_signed_pdf_flatten_form'), class: 'toggle', checked: account_config.value != false } %>
               </submit-form>
             </div>
           <% end %>
@@ -179,7 +180,7 @@
                 <%= t('document_download_filename_format') %>
               </span>
               <submit-form data-on="change" class="block mt-3">
-                <%= f.select :value, [["#{I18n.t('document_name')}.pdf", '{document.name}'], ["#{I18n.t('document_name')} - #{I18n.t(:signed)}.pdf", '{document.name} - {submission.status}'], ["#{I18n.t('document_name')} - name@domain.com.pdf", '{document.name} - {submission.submitters}'], ["#{I18n.t('document_name')} - name@domain.com - #{I18n.l(Time.current.beginning_of_year.in_time_zone(current_account.timezone), format: :short)}.pdf", '{document.name} - {submission.submitters} - {submission.completed_at}']], {}, class: 'base-select' %>
+                <%= f.select :value, [["#{I18n.t('document_name')}.pdf", '{document.name}'], ["#{I18n.t('document_name')} - #{I18n.t(:signed)}.pdf", '{document.name} - {submission.status}'], ["#{I18n.t('document_name')} - name@domain.com.pdf", '{document.name} - {submission.submitters}'], ["#{I18n.t('document_name')} - name@domain.com - #{I18n.l(Time.current.beginning_of_year.in_time_zone(current_account.timezone), format: :short)}.pdf", '{document.name} - {submission.submitters} - {submission.completed_at}']], {}, 'aria-label': t('document_download_filename_format'), class: 'base-select' %>
               </submit-form>
             </div>
           <% end %>

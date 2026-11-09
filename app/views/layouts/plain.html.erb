@@ -15,7 +15,8 @@
   </head>
   <body class="<%= 'bennett-staff' if bennett_staff? %>">
     <%= render 'shared/bennett_staff_navbar' if bennett_staff? && !turbo_frame_request? %>
-    <main>
+    <%= render 'shared/bennett_staff_page_header' if bennett_staff? && !turbo_frame_request? %>
+    <main id="staff-main" class="<%= 'bennett-staff-main bennett-staff-document' if bennett_staff? && !turbo_frame_request? %>" <%= 'tabindex=-1' if bennett_staff? && !turbo_frame_request? %>>
       <%= yield %>
     </main>
     <turbo-frame id="modal"></turbo-frame>

@@ -5,7 +5,7 @@
     <% if Docuseal.enable_pwa? %>
       <link rel="manifest" href="/manifest.json">
     <% end %>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <%= csrf_meta_tags %>
     <meta name="turbo-refresh-method" content="morph">
     <meta name="turbo-refresh-scroll" content="preserve">
@@ -35,10 +35,11 @@
     <turbo-frame id="drawer"></turbo-frame>
     <% if bennett_staff? %>
       <%= render 'shared/bennett_staff_navbar' %>
+      <%= render 'shared/bennett_staff_page_header' %>
     <% else %>
       <%= render turbo_native_app? ? 'shared/native_navbar' : 'shared/navbar' %>
     <% end %>
-    <main class="max-w-6xl mx-auto px-4 md:px-2 mb-8">
+    <main id="staff-main" class="max-w-6xl mx-auto px-4 md:px-2 mb-8 <%= 'bennett-staff-main' if bennett_staff? %>" <%= 'tabindex=-1' if bennett_staff? %>>
       <%= yield %>
     </main>
     <% if flash.present? %><%= render 'shared/flash' %><% end %>

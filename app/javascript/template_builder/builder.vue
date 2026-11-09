@@ -214,6 +214,7 @@
         <a
           v-if="withLogo"
           href="/"
+          aria-label="Back to templates"
         >
           <Logo />
         </a>
@@ -347,6 +348,7 @@
           >
             <a
               id="send_button"
+              :aria-label="t('send')"
               :href="`/templates/${template.id}/submissions/new?with_link=true`"
               :data-turbo-frame="!nativePlatform && isMobile && isBreakpointLg ? '_top' : 'modal'"
               class="white-button md:!px-6"
@@ -373,6 +375,7 @@
             >
               <button
                 class="base-button !rounded-r-none !pr-2"
+                :aria-label="t('save')"
                 :class="{ disabled: isSaving }"
                 v-bind="isSaving ? { disabled: true } : {}"
                 @click.prevent="onSaveClick"
@@ -586,6 +589,9 @@
       <div
         id="pages_container"
         ref="pagesContainer"
+        tabindex="0"
+        role="region"
+        aria-label="Document pages"
         class="w-full mt-0.5 pt-0.5"
         :class="[
           isMobile ? 'overflow-y-auto' : 'overflow-y-hidden md:overflow-y-auto',

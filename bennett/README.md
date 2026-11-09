@@ -31,7 +31,9 @@ Every active Bennett Legal JUD user can review signing documents and audit histo
 
 For an existing active native account, email verification at `/sign_in` opens `/submissions`. The staff header links to **JUD retainers**, **All submissions**, **Completed**, templates and settings. Submission details and event timelines use the same staff theme; frame/modal responses retain their existing behavior. Appearance can follow the system or use light/dark mode. DocuSeal's logo and attribution remain visible.
 
-Validation includes `bundle exec ruby bennett/test/staff_access.rb` (real RSA/JWT checks), `node bennett/test/staff_layout.test.cjs` (the real navbar ERB and theme assets at mobile/desktop widths), and `bennett/ci/rails/staff_access.rb` in the production-mode smoke stack. The latter checks actual Rails/Devise sessions, CSRF, logout, revoked users and the authenticator flow inside a rolled-back synthetic transaction. No real email or document is used.
+The staff interface uses JUD's compact navigation, page headings, Inter/system font stack and slate/charcoal surfaces. Templates and submissions appear as flat lists. Settings retain their permission-aware navigation, with a horizontal menu on phones. The editor, document viewer, menus, dialogs and event history share the same controls and appearance preference. Dialogs contain focus and restore it to their trigger. Staff asset URLs carry a revision query so a browser does not retain an older theme after an update.
+
+Validation includes `bundle exec ruby bennett/test/staff_access.rb` (real RSA/JWT checks), `node bennett/test/staff_layout.test.cjs` (the real navbar ERB and theme assets at mobile/desktop widths), and `bennett/ci/rails/staff_access.rb` in the production-mode smoke stack. The latter checks actual Rails/Devise sessions, CSRF, logout, revoked users, the authenticator flow and rendering of the template, editor and settings sections inside a rolled-back synthetic transaction. No real email or document is used.
 
 ## Build locally
 

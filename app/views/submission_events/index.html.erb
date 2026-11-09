@@ -1,7 +1,7 @@
 <% event_colors = %w[bg-red-200 bg-sky-200 bg-emerald-200 bg-yellow-200 bg-purple-200 bg-pink-200 bg-cyan-200 bg-orange-200 bg-lime-200 bg-indigo-200] %>
 <% submitters_uuids = (@submission.template_submitters || @submission.template.submitters).pluck('uuid') %>
 <%= render 'shared/turbo_modal_large', title: t('event_log') do %>
-  <div class="pl-8 pr-4 py-4">
+  <div class="bennett-event-timeline pl-8 pr-4 py-4">
     <ol class="relative border-s border-base-300 space-y-6">
       <li class="ml-7">
         <span class="absolute flex items-center justify-center w-7 h-7 rounded-full -start-3.5 ring-8 ring-base-100 text-base-content bg-gray-200">

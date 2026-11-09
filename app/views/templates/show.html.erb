@@ -32,7 +32,7 @@
         <% end %>
         <% if !@template.archived_at? && can?(:create, Submission) %>
           <open-modal-mobile class="flex">
-            <%= link_to new_template_submission_path(@template), id: 'add_recipients_button', class: 'white-button !border', aria: { label: t('add_new_recipients') }, data: { turbo_frame: 'modal', native_modal: ('medium' if @template.submitters.size < 3) } do %>
+            <%= link_to new_template_submission_path(@template), id: 'add_recipients_button', class: 'white-button !border', aria: { label: strip_tags(t('add_recipients_html')) }, data: { turbo_frame: 'modal', native_modal: ('medium' if @template.submitters.size < 3) } do %>
               <%= svg_icon('plus', class: 'w-6 h-6 stroke-2') %>
               <%= t('add_recipients_html') %>
             <% end %>
@@ -45,7 +45,7 @@
 <% if is_show_tabs %>
   <div class="flex items-center flex-col md:flex-row md:flex-wrap gap-2 mb-4">
     <div class="hidden <%= 'md:flex' unless turbo_native_app? %> md:items-end gap-2 md:w-fit">
-      <a href="<%= url_for(params: request.query_parameters.except('status')) %>" class="<%= params[:status].blank? ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
+      <a href="<%= url_for(params: request.query_parameters.except('status')) %>" class="bennett-status-tab <%= params[:status].blank? ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
         <div class="flex items-center space-x-1">
           <%= svg_icon('list', class: 'w-5 h-5') %>
           <span class="font-normal"><%= t('all') %></span>
@@ -56,7 +56,7 @@
           </div>
         <% end %>
       </a>
-      <a href="<%= url_for(params: request.query_parameters.merge('status' => 'pending')) %>" class="<%= params[:status] == 'pending' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
+      <a href="<%= url_for(params: request.query_parameters.merge('status' => 'pending')) %>" class="bennett-status-tab <%= params[:status] == 'pending' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
         <div class="flex items-center space-x-1">
           <%= svg_icon('clock', class: 'w-5 h-5') %>
           <span class="font-normal"><%= t('pending') %></span>
@@ -67,7 +67,7 @@
           </div>
         <% end %>
       </a>
-      <a href="<%= url_for(params: request.query_parameters.merge('status' => 'completed')) %>" class="<%= params[:status] == 'completed' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
+      <a href="<%= url_for(params: request.query_parameters.merge('status' => 'completed')) %>" class="bennett-status-tab <%= params[:status] == 'completed' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
         <div class="flex items-center space-x-1">
           <%= svg_icon('circle_check', class: 'w-5 h-5') %>
           <span class="font-normal"><%= t('completed') %></span>

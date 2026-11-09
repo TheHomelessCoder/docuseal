@@ -10,7 +10,7 @@
       <div class="mr-2">
         <%= render 'dashboard/toggle_view', selected: 'submissions' %>
       </div>
-      <h1 class="text-2xl truncate md:text-3xl sm:text-4xl font-bold md:block <%= 'hidden' if params[:q].present? %>">
+      <h1 class="bennett-original-heading text-2xl truncate md:text-3xl sm:text-4xl font-bold md:block <%= 'hidden' if params[:q].present? %>">
         <%= t('submissions') %>
       </h1>
     </div>
@@ -24,7 +24,7 @@
         <%= render 'templates/upload_button' %>
       </span>
       <open-modal-mobile data-disabled="<%= !Docuseal.multitenant? %>" class="flex">
-        <%= link_to new_template_path, class: 'white-button !border gap-2', data: { turbo_frame: :modal, native_modal: :medium } do %>
+        <%= link_to new_template_path, class: 'white-button !border gap-2', aria: { label: t('create') }, data: { turbo_frame: :modal, native_modal: :medium } do %>
           <%= svg_icon('plus', class: 'w-6 h-6 stroke-2') %>
           <span class="hidden md:block"><%= t('create') %></span>
         <% end %>
@@ -44,19 +44,19 @@
 <% if is_show_tabs %>
   <div class="flex items-center flex-col md:flex-row md:flex-wrap gap-2 mb-4">
     <div class="hidden <%= 'md:flex' unless turbo_native_app? %> md:items-end gap-2 md:w-fit">
-      <a href="<%= url_for(params: request.query_parameters.except('status')) %>" class="<%= params[:status].blank? ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-600">
+      <a href="<%= url_for(params: request.query_parameters.except('status')) %>" class="bennett-status-tab <%= params[:status].blank? ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-600">
         <div class="flex items-center space-x-1">
           <%= svg_icon('list', class: 'w-5 h-5') %>
           <span class="font-normal"><%= t('all') %></span>
         </div>
       </a>
-      <a href="<%= url_for(params: request.query_parameters.merge('status' => 'pending')) %>" class="<%= params[:status] == 'pending' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-600">
+      <a href="<%= url_for(params: request.query_parameters.merge('status' => 'pending')) %>" class="bennett-status-tab <%= params[:status] == 'pending' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-600">
         <div class="flex items-center space-x-1">
           <%= svg_icon('clock', class: 'w-5 h-5') %>
           <span class="font-normal"><%= t('pending') %></span>
         </div>
       </a>
-      <a href="<%= url_for(params: request.query_parameters.merge('status' => 'completed')) %>" class="<%= params[:status] == 'completed' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-600">
+      <a href="<%= url_for(params: request.query_parameters.merge('status' => 'completed')) %>" class="bennett-status-tab <%= params[:status] == 'completed' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-600">
         <div class="flex items-center space-x-1">
           <%= svg_icon('circle_check', class: 'w-5 h-5') %>
           <span class="font-normal"><%= t('completed') %></span>
