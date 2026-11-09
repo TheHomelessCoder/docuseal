@@ -1,4 +1,5 @@
 <% query_params = params.permit(:q, :scope, :archived).merge(filter_params) %>
+<% filter_query_params = bennett_staff? ? request.query_parameters.except('page') : request.query_parameters %>
 <% filter_names = %w[status archived template folder author completed_at created_at] %>
 <% ordered_filters = request.query_parameters.keys.filter_map { |key| filter_names.find { |name| key.start_with?(name) } }.uniq %>
 <% chip_order = ordered_filters.reverse.each_with_index.to_h { |name, index| [name, index + 1] } %>
@@ -15,7 +16,7 @@
         <%= svg_icon(status_icon || default_status_icon, class: 'w-5 h-5 shrink-0') %>
         <span class="font-normal truncate"><%= t(params[:status]) %></span>
       <% end %>
-      <%= link_to url_for(params: request.query_parameters.except('status')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
+      <%= link_to url_for(params: filter_query_params.except('status')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
         <%= svg_icon('x', class: 'w-5 h-5') %>
       <% end %>
     </div>
@@ -28,7 +29,7 @@
         <%= svg_icon('archive', class: 'w-5 h-5 shrink-0') %>
         <span class="font-normal truncate"><%= t('archived') %></span>
       </span>
-      <%= link_to url_for(params: request.query_parameters.except('archived')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
+      <%= link_to url_for(params: filter_query_params.except('archived')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
         <%= svg_icon('x', class: 'w-5 h-5') %>
       <% end %>
     </div>
@@ -39,7 +40,7 @@
         <%= svg_icon('layout_grid', class: 'w-5 h-5 shrink-0') %>
         <span class="font-normal truncate"><%= local_assigns[:filter_template].name %></span>
       </span>
-      <%= link_to url_for(params: request.query_parameters.except('template_id')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
+      <%= link_to url_for(params: filter_query_params.except('template_id')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
         <%= svg_icon('x', class: 'w-5 h-5') %>
       <% end %>
     </div>
@@ -50,7 +51,7 @@
         <%= svg_icon('folder', class: 'w-5 h-5 shrink-0') %>
         <span class="font-normal truncate"><%= params[:folder] %></span>
       <% end %>
-      <%= link_to url_for(params: request.query_parameters.except('folder')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
+      <%= link_to url_for(params: filter_query_params.except('folder')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
         <%= svg_icon('x', class: 'w-5 h-5') %>
       <% end %>
     </div>
@@ -61,7 +62,7 @@
         <%= svg_icon('user', class: 'w-5 h-5 shrink-0') %>
         <span class="font-normal truncate"><%= current_account.users.accessible_by(current_ability).where(account: current_account).find_by(email: params[:author])&.full_name || 'NA' %></span>
       <% end %>
-      <%= link_to url_for(params: request.query_parameters.except('author')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
+      <%= link_to url_for(params: filter_query_params.except('author')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
         <%= svg_icon('x', class: 'w-5 h-5') %>
       <% end %>
     </div>
@@ -79,7 +80,7 @@
           <% end %>
         </span>
       <% end %>
-      <%= link_to url_for(params: request.query_parameters.except('completed_at_from', 'completed_at_to')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
+      <%= link_to url_for(params: filter_query_params.except('completed_at_from', 'completed_at_to')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
         <%= svg_icon('x', class: 'w-5 h-5') %>
       <% end %>
     </div>
@@ -97,7 +98,7 @@
           <% end %>
         </span>
       <% end %>
-      <%= link_to url_for(params: request.query_parameters.except('created_at_to', 'created_at_from')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
+      <%= link_to url_for(params: filter_query_params.except('created_at_to', 'created_at_from')), class: 'rounded-lg ml-1 shrink-0 hover:bg-base-content hover:text-white' do %>
         <%= svg_icon('x', class: 'w-5 h-5') %>
       <% end %>
     </div>
@@ -114,7 +115,7 @@
     <ul tabindex="0" class="<%= turbo_native_app? ? 'hidden' : 'z-10 dropdown-content p-2 mt-2 shadow menu text-base bg-base-100 rounded-box' %>" style="min-width: 180px;">
       <li>
         <native-menu-action data-icon="list" data-label="<%= t('all') %>" data-selected="<%= current_status == 'all' %>" class="grid-cols-1 p-0 <%= 'bg-base-200' if current_status == 'all' %>">
-          <%= link_to url_for(params: request.query_parameters.except('status')), class: 'flex items-center gap-2 px-4 py-2', aria: { label: t('all') } do %>
+          <%= link_to url_for(params: filter_query_params.except('status')), class: 'flex items-center gap-2 px-4 py-2', aria: { label: t('all') } do %>
             <%= svg_icon('list', class: 'w-5 h-5 shrink-0') %>
             <span><%= t('all') %></span>
             <% if local_assigns[:all_count] %>
@@ -127,7 +128,7 @@
       </li>
       <li>
         <native-menu-action data-icon="clock" data-label="<%= t('pending') %>" data-selected="<%= current_status == 'pending' %>" class="grid-cols-1 p-0 <%= 'bg-base-200' if current_status == 'pending' %>">
-          <%= link_to url_for(params: request.query_parameters.merge('status' => 'pending')), class: 'flex items-center gap-2 px-4 py-2', aria: { label: t('pending') } do %>
+          <%= link_to url_for(params: filter_query_params.merge('status' => 'pending')), class: 'flex items-center gap-2 px-4 py-2', aria: { label: t('pending') } do %>
             <%= svg_icon('clock', class: 'w-5 h-5 shrink-0') %>
             <span><%= t('pending') %></span>
             <% if local_assigns[:pending_count] %>
@@ -140,7 +141,7 @@
       </li>
       <li>
         <native-menu-action data-icon="circle_check" data-label="<%= t('completed') %>" data-selected="<%= current_status == 'completed' %>" class="grid-cols-1 p-0 <%= 'bg-base-200' if current_status == 'completed' %>">
-          <%= link_to url_for(params: request.query_parameters.merge('status' => 'completed')), class: 'flex items-center gap-2 px-4 py-2', aria: { label: t('completed') } do %>
+          <%= link_to url_for(params: filter_query_params.merge('status' => 'completed')), class: 'flex items-center gap-2 px-4 py-2', aria: { label: t('completed') } do %>
             <%= svg_icon('circle_check', class: 'w-5 h-5 shrink-0') %>
             <span><%= t('completed') %></span>
             <% if local_assigns[:completed_count] %>

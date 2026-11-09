@@ -76,7 +76,83 @@ User.transaction do
     section = Nokogiri::HTML(browser.response.body)
     check.call(section.at_css('.bennett-staff-page-heading h1').present?, "page heading #{path}")
     check.call(section.at_css('.bennett-staff-nav [aria-current="page"]').present?, "active navigation #{path}")
-    check.call(section.css('link[href="/packs/bennett-staff-v1.css?v=2"]').one?, "versioned workspace styles #{path}")
+    check.call(section.css('link[href="/packs/bennett-staff-v1.css?v=3"]').one?, "versioned workspace styles #{path}")
+  end
+
+  # Small/empty lists used to hide search and offer a document upload instead.
+  # Keep fixtures rolled back separately so the authentication checks below
+  # retain their original account/user counts.
+  # rubocop:disable-next Metrics/BlockLength
+  Submission.transaction(requires_new: true) do
+    role = { 'name' => 'Client', 'uuid' => SecureRandom.uuid }
+    template.update!(submitters: [role])
+    SearchEntries.reindex_record(template) if Docuseal.fulltext_search?
+    create_submission = lambda do |name, status = :completed, source_template = template|
+      completed_at = Time.current if status == :completed
+      record = source_template.submissions.create!(account: source_template.account, created_by_user: user,
+                                                   source: 'api', template_submitters: [role],
+                                                   completed_at:, archived_at: (Time.current if status == :archived))
+      record.submitters.create!(account: source_template.account, uuid: role['uuid'], name:,
+                                email: "#{SecureRandom.hex(6)}@example.test", sent_at: Time.current, completed_at:)
+      SearchEntries.reindex_record(record) if Docuseal.fulltext_search?
+      record
+    end
+    target = create_submission.call('Anchor Reviewer')
+    create_submission.call('Anchor Pending', :pending)
+    archived = create_submission.call('Anchor Archived', :archived)
+    rows = -> { Nokogiri::HTML(browser.response.body).css('.bennett-submission-item').pluck('id') }
+    list_paths = ['/submissions', '/submissions?status=completed', '/submissions/archived',
+                  "/templates/#{template.id}", "/templates/#{template.id}/archived"]
+    list_paths.each do |path|
+      browser.get(path, headers:)
+      page = Nokogiri::HTML(browser.response.body)
+      check.call(browser.response.status == 200, "small submission list #{path}")
+      check.call(page.at_css('input[type="search"][aria-label="Search submissions"]').present?,
+                 "visible search #{path}")
+      check.call(page.at_css('.bennett-submission-filters').present?, "available filters #{path}")
+    end
+    browser.get('/submissions', headers:)
+    page = Nokogiri::HTML(browser.response.body)
+    check.call(page.css('file-dropzone, a[href="/templates/new"]').empty?,
+               'staff dashboard has no upload/create prompt')
+
+    # The target is older than an entire page of newer records. Its match must
+    # come from the authorized query, rather than filtering the rendered page.
+    12.times { create_submission.call('Filler Reviewer') }
+    other_account = Account.create!(name: 'Other synthetic account')
+    other_user = other_account.users.create!(first_name: 'Private', last_name: 'Reviewer',
+                                             email: 'private@example.test', password: SecureRandom.hex(24))
+    other_template = Template.create!(account: other_account, author: other_user, name: 'Private template',
+                                      submitters: [role])
+    create_submission.call('Anchor Private', :completed, other_template)
+    browser.get('/submissions', headers:)
+    check.call(rows.call.exclude?("submission_#{target.id}"), 'target begins beyond the first page')
+    browser.get('/submissions', params: { q: 'Anchor', status: 'completed', author: user.email,
+                                          completed_at_from: Date.yesterday.iso8601 }, headers:)
+    check.call(rows.call == ["submission_#{target.id}"],
+               'search combines with status/date/author and account authorization')
+    browser.get('/submissions', params: { q: target.submitters.first.email, status: 'completed' }, headers:)
+    check.call(rows.call == ["submission_#{target.id}"], 'recipient email search finds an older submission')
+    browser.get('/submissions', params: { q: template.name }, headers:)
+    check.call(rows.call.present?, 'global submissions search matches template names')
+    browser.get('/submissions/archived', params: { q: 'Anchor' }, headers:)
+    check.call(rows.call == ["submission_#{archived.id}"], 'archived search stays within archived records')
+    browser.get("/templates/#{template.id}", params: { q: 'Anchor', status: 'completed' }, headers:)
+    check.call(rows.call == ["submission_#{target.id}"], 'template search and status work together')
+    browser.get('/submissions', params: { q: 'no-match-synthetic' }, headers:)
+    page = Nokogiri::HTML(browser.response.body)
+    check.call(rows.call.empty? && page.at_css('.bennett-submission-search').present?, 'empty search keeps controls')
+
+    browser.get('/submissions', params: { q: 'Filler', status: 'completed', author: user.email, page: 2 }, headers:)
+    page = Nokogiri::HTML(browser.response.body)
+    clear = URI(page.at_css('[aria-label="Clear submission search"]')['href'])
+    pending = URI(page.at_css('a.bennett-status-tab[href*="status=pending"]')['href'])
+    check.call(Rack::Utils.parse_nested_query(clear.query).slice('status', 'author') ==
+               { 'status' => 'completed', 'author' => user.email }, 'clearing search retains active filters')
+    check.call(!Rack::Utils.parse_nested_query(clear.query).key?('page') &&
+               !Rack::Utils.parse_nested_query(pending.query).key?('page'), 'search/status changes reset pagination')
+    check.call(Rack::Utils.parse_nested_query(pending.query)['q'] == 'Filler', 'status change retains search')
+    raise ActiveRecord::Rollback
   end
 
   begin
@@ -145,6 +221,9 @@ User.transaction do
   check.call(legacy_browser.response.redirect?, 'legacy password login')
   legacy_browser.get('/sign_in')
   check.call(redirects_to.call(legacy_browser, '/'), 'legacy already-authenticated guard')
+  legacy_browser.get('/submissions')
+  check.call(Nokogiri::HTML(legacy_browser.response.body).at_css('a[href="/templates/new"]').present?,
+             'unselected native workspace keeps template creation')
   raise ActiveRecord::Rollback
 end
 check.call(User.count == original_count, 'synthetic mutations rolled back')

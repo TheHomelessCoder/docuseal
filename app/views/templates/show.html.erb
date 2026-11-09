@@ -1,8 +1,9 @@
 <% content_for(:native_title, @template.name) if turbo_native_app? %>
 <% filter_params = params.permit(Submissions::Filter::ALLOWED_PARAMS).compact_blank %>
-<% is_show_tabs = @pagy.pages > 1 || params[:q].present? || params[:status].present? || filter_params.present? %>
+<% is_show_tabs = bennett_staff? || @pagy.pages > 1 || params[:q].present? || params[:status].present? || filter_params.present? %>
+<% status_query_params = bennett_staff? ? request.query_parameters.except('page') : request.query_parameters %>
 <% submissions_count = @pagy.count %>
-<% is_show_header = submissions_count != 0 || params[:q].present? || params[:status].present? || filter_params.present? %>
+<% is_show_header = bennett_staff? || submissions_count != 0 || params[:q].present? || params[:status].present? || filter_params.present? %>
 <%= render 'title', template: @template, with_export: is_show_header %>
 <% if turbo_native_app? %>
   <% if !turbo_native_android? || submissions_count >= 5 || params[:q].present? || params[:status].present? || filter_params.present? %>
@@ -16,15 +17,15 @@
 <% end %>
 <% if is_show_header %>
   <div class="<%= is_show_tabs ? 'mb-2 md:mb-4' : 'mb-4 md:mb-6' %>">
-    <div class="group/header flex justify-between items-end">
+    <div class="bennett-submissions-header group/header flex justify-between items-end">
       <div class="max-md:group-has-[search-input:focus-within]/header:hidden">
         <h2 class="text-3xl font-bold md:block <%= 'hidden' if params[:q].present? %>">
           <%= t('submissions') %>
         </h2>
       </div>
-      <div class="flex justify-end space-x-2 max-md:has-[search-input:focus-within]:grow <%= 'max-md:grow' if params[:q].present? %>">
-        <% if !turbo_native_app? && (params[:q].present? || params[:status].present? || filter_params.present? || @pagy.pages > 1) %>
-          <%= render 'shared/search_input' %>
+      <div class="bennett-submissions-search-row flex justify-end space-x-2 max-md:has-[search-input:focus-within]:grow <%= 'max-md:grow' if params[:q].present? %>">
+        <% if !turbo_native_app? && (bennett_staff? || params[:q].present? || params[:status].present? || filter_params.present? || @pagy.pages > 1) %>
+          <%= render 'shared/search_input', submissions: true, placeholder: (bennett_staff? ? 'Search by recipient' : nil) %>
         <% end %>
         <%= link_to new_template_submissions_export_path(@template, params.permit(:q, *Submissions::Filter::ALLOWED_PARAMS)), class: 'hidden md:flex btn btn-ghost text-base', data: { turbo_frame: 'modal', native_modal: 'medium' } do %>
           <%= svg_icon('download', class: 'w-6 h-6 stroke-2') %>
@@ -43,9 +44,9 @@
   </div>
 <% end %>
 <% if is_show_tabs %>
-  <div class="flex items-center flex-col md:flex-row md:flex-wrap gap-2 mb-4">
+  <div class="bennett-submission-filters flex items-center flex-col md:flex-row md:flex-wrap gap-2 mb-4">
     <div class="hidden <%= 'md:flex' unless turbo_native_app? %> md:items-end gap-2 md:w-fit">
-      <a href="<%= url_for(params: request.query_parameters.except('status')) %>" class="bennett-status-tab <%= params[:status].blank? ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
+      <a href="<%= url_for(params: status_query_params.except('status')) %>" class="bennett-status-tab <%= params[:status].blank? ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
         <div class="flex items-center space-x-1">
           <%= svg_icon('list', class: 'w-5 h-5') %>
           <span class="font-normal"><%= t('all') %></span>
@@ -56,7 +57,7 @@
           </div>
         <% end %>
       </a>
-      <a href="<%= url_for(params: request.query_parameters.merge('status' => 'pending')) %>" class="bennett-status-tab <%= params[:status] == 'pending' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
+      <a href="<%= url_for(params: status_query_params.merge('status' => 'pending')) %>" class="bennett-status-tab <%= params[:status] == 'pending' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
         <div class="flex items-center space-x-1">
           <%= svg_icon('clock', class: 'w-5 h-5') %>
           <span class="font-normal"><%= t('pending') %></span>
@@ -67,7 +68,7 @@
           </div>
         <% end %>
       </a>
-      <a href="<%= url_for(params: request.query_parameters.merge('status' => 'completed')) %>" class="bennett-status-tab <%= params[:status] == 'completed' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
+      <a href="<%= url_for(params: status_query_params.merge('status' => 'completed')) %>" class="bennett-status-tab <%= params[:status] == 'completed' ? 'border-neutral-700' : 'border-neutral-300' %> flex h-10 px-2 py-1 text-lg items-center justify-between border text-center text-neutral font-semibold rounded-xl w-full md:w-48 hover:border-neutral-700">
         <div class="flex items-center space-x-1">
           <%= svg_icon('circle_check', class: 'w-5 h-5') %>
           <span class="font-normal"><%= t('completed') %></span>
