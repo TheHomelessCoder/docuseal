@@ -7,6 +7,7 @@
   >
     <img
       ref="image"
+      alt="Document page"
       loading="lazy"
       :src="image.url"
       :width="width"

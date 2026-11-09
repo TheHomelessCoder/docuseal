@@ -1,6 +1,6 @@
 <% expanded = local_assigns[:expanded] %>
 <% nav_link_data = turbo_native_app? && !expanded ? { turbo_action: 'replace' } : {} %>
-<div class="<%= expanded ? 'block -mx-3 md:mx-0' : 'w-full md:w-52 flex-none' %> <%= 'md:sticky md:top-0 md:self-start' if turbo_native_app? && !expanded %>">
+<div class="bennett-settings-navigation <%= expanded ? 'block -mx-3 md:mx-0' : 'w-full md:w-52 flex-none' %> <%= 'md:sticky md:top-0 md:self-start' if turbo_native_app? && !expanded %>">
   <% unless expanded || turbo_native_app? %>
     <div class="md:hidden w-full">
       <a href="<%= local_assigns[:back_path] || settings_path %>" class="flex items-center space-x-0.5 font-medium">
@@ -119,8 +119,8 @@
           <% end %>
           <%= render 'shared/settings_nav_extra2', nav_link_data: %>
           <% if (can?(:manage, EncryptedConfig) && current_user == true_user) || (current_user != true_user && current_account.testing?) %>
+            <li>
             <%= form_for '', url: testing_account_path, method: current_account.testing? ? :delete : :post, html: { class: 'w-full' } do |f| %>
-              <li>
                 <label class="flex items-center text-base hover:bg-base-300 w-full justify-between">
                   <span class="mr-2 w-full">
                     <%= t('test_mode') %>
@@ -129,8 +129,8 @@
                     <%= f.check_box :testing_toggle, id: nil, class: 'toggle toggle-sm', checked: current_account.testing? %>
                   </submit-form>
                 </label>
-              </li>
             <% end %>
+            </li>
           <% end %>
         <% end %>
       </ul>
@@ -143,18 +143,18 @@
           </div>
           <div class="flex mt-3 space-x-3">
             <div class="tooltip tooltip-no-touch" data-tip="GitHub">
-              <a href="<%= Docuseal::GITHUB_URL %>" target="_blank" class="btn btn-circle btn-primary btn-md">
+              <a href="<%= Docuseal::GITHUB_URL %>" target="_blank" aria-label="GitHub" class="btn btn-circle btn-primary btn-md">
                 <%= svg_icon('brand_github', class: 'w-8 h-8') %>
               </a>
             </div>
             <div class="tooltip tooltip-no-touch" data-tip="<%= t('discord_community') %>">
-              <a href="<%= Docuseal::DISCORD_URL %>" target="_blank" class="btn btn-circle btn-primary btn-md">
+              <a href="<%= Docuseal::DISCORD_URL %>" target="_blank" aria-label="<%= t('discord_community') %>" class="btn btn-circle btn-primary btn-md">
                 <%= svg_icon('brand_discord', class: 'w-8 h-8') %>
               </a>
             </div>
             <%= capture do %>
               <div class="tooltip tooltip-no-touch" data-tip="<%= t('ai_assistant') %>">
-                <a href="<%= Docuseal::CHATGPT_URL %>" target="_blank" class="btn btn-circle btn-primary btn-md">
+                <a href="<%= Docuseal::CHATGPT_URL %>" target="_blank" aria-label="<%= t('ai_assistant') %>" class="btn btn-circle btn-primary btn-md">
                   <%= svg_icon('message', class: 'w-8 h-8') %>
                 </a>
               </div>

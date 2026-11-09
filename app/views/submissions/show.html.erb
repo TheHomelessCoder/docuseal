@@ -17,7 +17,7 @@
       <% unless turbo_native_app? %>
         <a href="<%= signed_in? && @submission.account_id == current_account&.id && @submission.template ? template_path(@submission.template) : '/' %>" class="flex items-center space-x-3 py-1">
           <span><%= render 'submissions/logo' %></span>
-          <h1 class="text-xl md:text-3xl font-semibold focus:text-clip" style="overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;"><% (@submission.name || @submission.template&.name).to_s.split(/(_)/).each do |item| %><%= item %><wbr><% end %></h1>
+          <h1 class="bennett-original-heading text-xl md:text-3xl font-semibold focus:text-clip" style="overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;"><% (@submission.name || @submission.template&.name).to_s.split(/(_)/).each do |item| %><%= item %><wbr><% end %></h1>
         </a>
       <% end %>
       <div class="flex items-center gap-3">
@@ -36,7 +36,7 @@
         <% elsif signed_in? %>
           <native-action data-label="<%= t('event_log') %>" data-icon="logs">
             <open-modal-mobile class="flex">
-              <%= link_to submission_events_path(@submission), class: 'white-button', data: { turbo_frame: :modal } do %>
+              <%= link_to submission_events_path(@submission), class: 'white-button', aria: { label: t('event_log') }, data: { turbo_frame: :modal } do %>
                 <%= svg_icon('logs', class: 'w-6 h-6') %>
                 <span class="hidden md:block"><%= t('event_log') %></span>
               <% end %>
@@ -73,11 +73,11 @@
               <% if show_download_dropdown %>
                 <div class="dropdown dropdown-end has-[button:disabled]:dropdown-open">
                   <% unless turbo_native_app? %>
-                    <label tabindex="0" aria-label="<%= t('download') %>" class="base-button !rounded-l-none !pl-1 !pr-2 !border-l-neutral-500">
+                    <button type="button" aria-label="<%= t('download') %>" class="base-button !rounded-l-none !pl-1 !pr-2 !border-l-neutral-500">
                       <span class="text-sm align-text-top">
                         <%= svg_icon('chevron_down', class: 'w-6 h-6 flex-shrink-0 stroke-2') %>
                       </span>
-                    </label>
+                    </button>
                   <% end %>
                   <ul class="z-10 dropdown-content p-2 mt-2 shadow menu text-base bg-base-100 rounded-box text-right">
                     <% if show_combined_download %>

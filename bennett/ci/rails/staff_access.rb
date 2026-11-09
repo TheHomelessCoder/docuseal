@@ -63,6 +63,22 @@ User.transaction do
   check.call(body.include?('JUD retainers') && body.include?('bennett-staff-v1.css'), 'staff shell')
   check.call(body.include?('DocuSeal') && body.exclude?('name="user[password]"'), 'no password prompt and attribution')
 
+  # Every native staff section must render the shared workspace, including
+  # settings pages and the full-page document/builder layouts.
+  paths = %w[/templates /submissions?status=completed /settings/profile /settings/account
+             /settings/notifications /settings/esign /settings/personalization /settings/users
+             /settings/api /settings/webhooks /settings/storage /settings/email /settings/sms /settings/sso]
+  template = Template.create!(account: user.account, author: user, name: 'Staff workspace (synthetic)')
+  paths.push("/templates/#{template.id}", "/templates/#{template.id}/edit")
+  paths.each do |path|
+    browser.get(path, headers:)
+    check.call(browser.response.status == 200, "workspace section #{path}")
+    section = Nokogiri::HTML(browser.response.body)
+    check.call(section.at_css('.bennett-staff-page-heading h1').present?, "page heading #{path}")
+    check.call(section.at_css('.bennett-staff-nav [aria-current="page"]').present?, "active navigation #{path}")
+    check.call(section.css('link[href="/packs/bennett-staff-v1.css?v=2"]').one?, "versioned workspace styles #{path}")
+  end
+
   begin
     browser.delete('/sign_out', headers:)
     check.call(browser.response.status == 422, 'CSRF refusal')

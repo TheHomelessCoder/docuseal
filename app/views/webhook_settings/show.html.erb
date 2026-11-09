@@ -142,7 +142,7 @@
               <span class="top-0 right-0 absolute">
                 <%= render 'shared/clipboard_copy', icon: 'copy', text: code = JSON.pretty_generate({ event_type: 'form.completed', timestamp: Time.current.iso8601, data: Submitters::SerializeForWebhook.call(submitter) }).gsub(/^/, '  ').sub(/^\s+/, ''), class: 'btn btn-ghost text-white', icon_class: 'w-6 h-6 text-white', copy_title: t('copy'), copied_title: t('copied') %>
               </span>
-              <pre><code class="overflow-hidden w-full"><%== HighlightCode.call(code, 'JSON', theme: 'base16.dark') %></code></pre>
+              <pre tabindex="0" role="region" aria-label="<%= t('submission_example_payload') %>"><code class="overflow-hidden w-full"><%== HighlightCode.call(code, 'JSON', theme: 'base16.dark') %></code></pre>
             </div>
           </div>
         </div>

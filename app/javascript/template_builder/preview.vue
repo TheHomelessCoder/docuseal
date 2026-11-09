@@ -3,6 +3,7 @@
     <div class="relative">
       <img
         :src="previewImage.url"
+        :alt="item.name || 'Document preview'"
         :width="previewImage.metadata.width"
         :height="previewImage.metadata.height"
         class="rounded border"

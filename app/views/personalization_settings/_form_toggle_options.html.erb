@@ -8,7 +8,7 @@
           <%= t('show_confetti_on_successful_completion') %>
         </span>
         <submit-form data-on="change" class="flex">
-          <%= f.check_box :value, { class: 'toggle', checked: account_config.value == true }, '1', '0' %>
+          <%= f.check_box :value, { 'aria-label': t('show_confetti_on_successful_completion'), class: 'toggle', checked: account_config.value == true }, '1', '0' %>
         </submit-form>
       </div>
     <% end %>

@@ -15,7 +15,7 @@
               <%= t('receive_notification_emails_on_completed_submission') %>
             </span>
             <submit-form data-on="change" class="flex">
-              <%= f.check_box :value, class: 'toggle', checked: user_config.value != false %>
+              <%= f.check_box :value, 'aria-label': t('email_notifications'), class: 'toggle', checked: user_config.value != false %>
             </submit-form>
           </div>
         <% end %>
