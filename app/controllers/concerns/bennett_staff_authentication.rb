@@ -30,7 +30,8 @@ module BennettStaffAuthentication
     return unless bennett_staff?
 
     email = Bennett::StaffAccess.verifier.email(request.headers['Cf-Access-Jwt-Assertion'])
-    @bennett_staff_user = User.active.find_by(email:) if email
+    @bennett_staff_user = User.find_by(email:) if email
+    return redirect_staff_viewer if email && !@bennett_staff_user
     unless @bennett_staff_user&.active_for_authentication?
       sign_out
       reset_session
@@ -51,5 +52,13 @@ module BennettStaffAuthentication
     # A configured native authenticator remains an additional requirement.
     # Its existing Devise challenge must complete before a session is issued.
     sign_in(:user, @bennett_staff_user)
+  end
+
+  def redirect_staff_viewer
+    # JUD verifies its active roster before serving documents. Native editing
+    # permissions are never provisioned as a side effect of a viewer login.
+    sign_out
+    reset_session
+    redirect_to 'https://jud.bennettlegal.com/retainers', allow_other_host: true
   end
 end

@@ -84,7 +84,9 @@ User.transaction do
   browser.get('/submissions', headers: { 'Cf-Access-Authenticated-User-Email' => user.email })
   check.call(browser.response.status == 403, 'email header is not identity')
   browser.get('/submissions', headers: { 'Cf-Access-Jwt-Assertion' => make_token.call('unknown@example.test') })
-  check.call(browser.response.status == 403 && User.count == original_count, 'no automatic account provisioning')
+  check.call(browser.response.redirect? && browser.response.location == 'https://jud.bennettlegal.com/retainers',
+             'staff viewers continue through JUD authorization')
+  check.call(User.count == original_count, 'no automatic native account provisioning')
 
   browser.get('/submissions', headers:)
   user.update!(archived_at: Time.current)

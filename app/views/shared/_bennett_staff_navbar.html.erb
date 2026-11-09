@@ -1,6 +1,6 @@
 <header class="bennett-staff-header">
   <div class="bennett-staff-topbar">
-    <a class="bennett-staff-brand" href="https://jud.bennettlegal.com/admin/retainers">
+    <a class="bennett-staff-brand" href="https://jud.bennettlegal.com/retainers">
       <img src="/packs/bennett-legal-logo-white.png" width="512" height="220" alt="Bennett Legal">
       <span>Signing</span>
     </a>
@@ -19,7 +19,7 @@
     </div>
   </div>
   <nav class="bennett-staff-nav" aria-label="Signing workspace">
-    <a href="https://jud.bennettlegal.com/admin/retainers">JUD retainers</a>
+    <a href="https://jud.bennettlegal.com/retainers">JUD retainers</a>
     <% if bennett_staff_signed_in? %>
       <%= link_to 'All submissions', submissions_path, aria: { current: ('page' if request.path.start_with?('/submissions') && params[:status] != 'completed') } %>
       <%= link_to 'Completed', submissions_path(status: 'completed'), aria: { current: ('page' if request.path == submissions_path && params[:status] == 'completed') } %>
