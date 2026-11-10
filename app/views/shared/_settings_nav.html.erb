@@ -1,6 +1,6 @@
 <% if bennett_staff? && !local_assigns[:expanded] %>
-  <link rel="stylesheet" href="/packs/bennett-settings-v1.css">
-  <script src="/packs/bennett-settings-v1.js" defer></script>
+  <link rel="stylesheet" href="/packs/bennett-settings-v1.css?v=3">
+  <script src="/packs/bennett-settings-v1.js?v=3" defer></script>
 <% end %>
 <% expanded = local_assigns[:expanded] %>
 <% nav_link_data = turbo_native_app? && !expanded ? { turbo_action: 'replace' } : {} %>
