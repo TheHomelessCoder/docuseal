@@ -19,6 +19,7 @@ Each change is a normal commit on `bennett-legal`; `git log upstream/master..ben
 - **Submission review controls** (2026-11-09). Staff submission lists keep search and filters available for small and empty results, including completed and archived requests. Search/filter changes reset pagination while preserving the other criteria. The submissions dashboard omits template creation and upload prompts; template management remains under Templates.
 - **Mobile settings navigation** (2026-11-09). Staff settings use a compact disclosure on phones while retaining the native permission-aware navigation and controls.
 - **Compact review rows and document language** (2026-11-09). Staff template/submission lists, settings tables and event timelines use tighter spacing and quieter actions. Spanish retainer badges use frozen submission document metadata before template metadata, with an exact-title fallback for legacy Bennett imports. List projections include the existing schema fields needed for those badges. Practice titles retain an explicit practice marker while shortening the displayed heading. Stored records, PDFs, signing actions, authorization and attribution are unchanged.
+- **Literal recipient email search** (2026-11-10). Submission searches containing an at-sign use case-insensitive literal matching for full and partial email addresses, including aliases and wildcard characters. The authorized record scope and existing filters apply before pagination. Other queries retain the configured full-text search behavior.
 
 ## Source availability
 
