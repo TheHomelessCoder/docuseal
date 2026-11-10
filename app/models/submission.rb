@@ -103,7 +103,7 @@ class Submission < ApplicationRecord
 
   scope :select_for_list, lambda {
     select(:id, :name, :created_by_user_id, :account_id, :completed_at,
-           :created_at, :archived_at, :expire_at, :template_id, :template_submitters)
+           :created_at, :archived_at, :expire_at, :template_id, :template_submitters, :template_schema)
   }
 
   enum :source, {

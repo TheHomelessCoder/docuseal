@@ -16,8 +16,13 @@
     <div class="flex justify-between items-center pr-4 sticky top-0 md:relative z-10 bg-base-100 <%= 'py-1.5' unless turbo_native_app? %>">
       <% unless turbo_native_app? %>
         <a href="<%= signed_in? && @submission.account_id == current_account&.id && @submission.template ? template_path(@submission.template) : '/' %>" class="flex items-center space-x-3 py-1">
-          <span><%= render 'submissions/logo' %></span>
-          <h1 class="bennett-original-heading text-xl md:text-3xl font-semibold focus:text-clip" style="overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;"><% (@submission.name || @submission.template&.name).to_s.split(/(_)/).each do |item| %><%= item %><wbr><% end %></h1>
+          <% if bennett_staff? %>
+            <%= svg_icon('arrow_left', class: 'w-4 h-4 shrink-0') %>
+            <span class="bennett-document-back"><%= @submission.template ? 'Back to template' : 'All submissions' %></span>
+          <% else %>
+            <span><%= render 'submissions/logo' %></span>
+            <h1 class="bennett-original-heading text-xl md:text-3xl font-semibold focus:text-clip" style="overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;"><% (@submission.name || @submission.template&.name).to_s.split(/(_)/).each do |item| %><%= item %><wbr><% end %></h1>
+          <% end %>
         </a>
       <% end %>
       <div class="flex items-center gap-3">

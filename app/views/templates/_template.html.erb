@@ -1,13 +1,17 @@
 <div class="bennett-template-item h-36 relative group min-w-0">
   <a href="<%= template_path(template) %>" class="bennett-template-link flex h-full flex-col justify-between rounded-2xl pt-6 px-7 w-full bg-base-200 before:border-2 before:border-base-300 before:border-dashed before:absolute before:left-0 before:right-0 before:top-0 before:bottom-0 before:hidden before:rounded-2xl" data-targets="dashboard-dropzone.templateCards" data-native-title="<%= template.name %>" data-native-actions="<%= (!template.archived_at? && can?(:update, template) ? 'pencil,menu' : 'file_text,menu') if turbo_native_app? %>">
-    <div class="text-xl font-semibold" style="line-height: 1.6rem; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;">
+    <div class="bennett-template-heading text-xl font-semibold" style="<%= 'line-height: 1.6rem; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;' unless bennett_staff? %>">
       <% if template.template_accesses.present? %>
         <%= svg_icon('lock', class: 'w-6 h-6 inline -translate-y-[4px]') %>
       <% end %>
-      <% template.name.split(/(_)/).each do |item| %><%= item %><wbr><% end %>
+      <span class="bennett-template-name"><% (bennett_staff? ? bennett_staff_document_title(template.name) : template.name).split(/(_)/).each do |item| %><%= item %><wbr><% end %></span>
+      <% if bennett_staff? %><%= render 'shared/bennett_document_language', template: template %><% end %>
     </div>
     <div class="bennett-template-meta pb-6 pt-1 space-y-1" data-targets="dashboard-dropzone.hiddenOnDrag">
       <p class="flex items-center space-x-1 text-xs text-base-content/60">
+        <% if bennett_staff? && bennett_staff_practice_document?(template.name) %>
+          <span class="bennett-practice-label">Practice · not a contract</span>
+        <% end %>
         <%= svg_icon('user', class: 'w-4 h-4') %>
         <span><%= template.author.full_name.presence || template.author.email.to_s.sub(/\+\w+@/, '@') %></span>
         <% if template.account_id != current_account.id %>

@@ -195,5 +195,59 @@ html[data-staff-color='dark']:has(body.bennett-staff) { --staff-info: #7dd3fc; -
 .bennett-staff template-builder .fields-grid-item.opacity-50 { opacity: .65; }
 html:has(body.bennett-staff) { --staff-secondary: #475569; }
 html[data-staff-color='dark']:has(body.bennett-staff) { --staff-secondary: #a0a8b5; }
+.bennett-staff .bennett-language-badge { display: inline-flex; flex: none; align-items: center; white-space: nowrap; min-height: 18px; padding: 1px 6px; border: 1px solid currentColor; border-radius: 4px; color: var(--staff-info); background: var(--staff-info-bg); font-size: 10px; line-height: 1.3; font-weight: 600; }
+.bennett-staff-title-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.bennett-staff-title-line h1 { min-width: 0; flex: 1 1 20rem; }
+.bennett-staff-title-line .bennett-practice-label { color: #cbd5e1; }
+.bennett-staff .bennett-template-toolbar #template_title .bennett-original-heading { display: none; }
+.bennett-staff .bennett-template-toolbar { margin-bottom: 12px; }
+.bennett-staff .bennett-document-back { font-size: 12px; font-weight: 600; }
+.bennett-staff .bennett-template-item { min-height: 52px; }
+.bennett-staff .bennett-template-link { padding: 8px 10px; gap: 16px; grid-template-columns: minmax(0, 1fr) 190px; }
+.bennett-staff .bennett-template-heading { display: flex; align-items: center; gap: 8px; min-width: 0; line-height: 1.4; }
+.bennett-staff .bennett-template-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.bennett-staff .bennett-template-meta p { margin: 0; font-size: 11px; line-height: 1.4; }
+.bennett-staff .bennett-template-shortcuts { padding: 0 8px; }
+.bennett-staff .bennett-submission-item { display: grid; grid-template-columns: minmax(0, 40%) minmax(0, 1fr); align-items: stretch; }
+.bennett-staff .bennett-submission-item > a.bennett-submission-document { display: block; width: auto; min-width: 0; padding: 8px 10px; }
+.bennett-staff .bennett-submission-document > div:first-child > div { gap: 6px; align-items: center; }
+.bennett-staff .bennett-submission-document > div:first-child > div > span { min-width: 0; line-height: 1.35; }
+.bennett-staff .bennett-submission-document > div:last-child { max-width: none; margin: 3px 0 0; }
+.bennett-staff .bennett-submission-meta { flex-direction: row; flex-wrap: wrap; gap: 10px; font-size: 11px; line-height: 1.3; }
+.bennett-staff .bennett-submission-meta > * { margin: 0; }
+.bennett-staff .bennett-submission-meta svg { width: 12px; height: 12px; }
+.bennett-staff .bennett-submission-item > .bennett-submission-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; }
+.bennett-staff .bennett-submission-item > .bennett-submission-body:only-child { grid-column: 1 / -1; }
+.bennett-staff .bennett-submission-signers { flex-direction: row; align-items: center; gap: 10px; }
+.bennett-staff .bennett-submission-recipients { display: grid; gap: 2px; line-height: 1.35; }
+.bennett-staff .bennett-submission-recipients > * { margin-top: 0; }
+.bennett-staff .bennett-submission-item a.text-lg { font-size: 12px; line-height: 1.35; }
+.bennett-staff .bennett-submission-item .badge { width: auto; min-width: 0; max-width: none; padding: 2px 5px; font-size: 10px; line-height: 1.25; }
+.bennett-staff .bennett-practice-label { font-size: 10px; font-weight: 600; white-space: nowrap; }
+.bennett-staff .bennett-submission-recipients .btn-neutral { width: auto; min-height: 24px; height: 24px; padding: 3px 6px; font-size: 10px; background: transparent; color: var(--staff-secondary); border-color: transparent; }
+.bennett-staff .bennett-submission-recipients .btn-neutral svg { width: 14px; height: 14px; color: inherit; }
+.bennett-staff .bennett-submission-actions { gap: 4px; margin: 0; }
+.bennett-staff .bennett-submission-actions > * { margin-left: 0; }
+.bennett-staff .bennett-submission-actions :is(.btn, download-button) { width: auto; min-width: 28px; min-height: 28px; height: 28px; padding: 5px 8px; font-size: 11px; }
+.bennett-staff .bennett-submission-actions .btn-neutral { background: var(--staff-surface); color: var(--staff-text); border-color: var(--staff-strong); }
+.bennett-staff .bennett-submission-actions svg { width: 14px; height: 14px; }
+.bennett-staff .table :is(th, td) { padding: 8px 10px; }
+.bennett-staff .bennett-event-timeline { padding: 10px 8px 10px 16px; }
+.bennett-staff .bennett-event-timeline ol.space-y-6 { display: grid; gap: 14px; }
+.bennett-staff .bennett-event-timeline ol.space-y-6 > li { margin-block: 0; padding-bottom: 0; }
+@media (max-width: 1023px) {
+  .bennett-staff .bennett-submission-item { grid-template-columns: minmax(0, 1fr); }
+  .bennett-staff .bennett-submission-item > .bennett-submission-body { padding-top: 0; }
+  .bennett-staff .bennett-submission-actions :is(.btn, download-button) { min-width: 32px; min-height: 32px; height: 32px; padding: 6px; }
+  .bennett-staff .bennett-submission-actions download-button [data-target='download-button.defaultButton'] > span { display: none; }
+}
+@media (max-width: 767px) {
+  .bennett-staff-title-line h1 { flex-basis: 100%; }
+  .bennett-staff .bennett-template-link { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .bennett-staff .bennett-template-meta { display: flex; flex-wrap: wrap; gap: 10px; }
+  .bennett-staff .bennett-template-meta p { gap: 6px; }
+  .bennett-staff .bennett-template-meta p > span { width: auto; }
+  .bennett-staff .bennett-template-name { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+}
 .bennett-staff .bennett-settings-navigation + div :is(.text-gray-700, .text-gray-900, label[for$='_radio']) { color: var(--staff-text); }
 .bennett-staff .bennett-settings-navigation + div pre { max-width: 100%; overflow-x: auto; padding: 16px; border: 1px solid #343b45; border-radius: 6px; background: #191c20; color: #e8eaed; }
