@@ -20,6 +20,7 @@ Each change is a normal commit on `bennett-legal`; `git log upstream/master..ben
 - **Mobile settings navigation** (2026-11-09). Staff settings use a compact disclosure on phones while retaining the native permission-aware navigation and controls.
 - **Compact review rows and document language** (2026-11-09). Staff template/submission lists, settings tables and event timelines use tighter spacing and quieter actions. Spanish retainer badges use frozen submission document metadata before template metadata, with an exact-title fallback for legacy Bennett imports. List projections include the existing schema fields needed for those badges. Practice titles retain an explicit practice marker while shortening the displayed heading. Stored records, PDFs, signing actions, authorization and attribution are unchanged.
 - **Literal recipient email search** (2026-11-10). Submission searches containing an at-sign use case-insensitive literal matching for full and partial email addresses, including aliases and wildcard characters. The authorized record scope and existing filters apply before pagination. Other queries retain the configured full-text search behavior.
+- **Signature preview contrast** (2026-11-10). The staff submission details show signature and initials previews on a white paper surface in both themes, keeping the original ink readable. This changes only the review panel presentation; stored signature images, signed PDFs and audit evidence retain their original bytes.
 
 ## Source availability
 

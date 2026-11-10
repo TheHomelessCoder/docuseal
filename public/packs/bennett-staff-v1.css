@@ -251,3 +251,5 @@ html[data-staff-color='dark']:has(body.bennett-staff) { --staff-secondary: #a0a8
 }
 .bennett-staff .bennett-settings-navigation + div :is(.text-gray-700, .text-gray-900, label[for$='_radio']) { color: var(--staff-text); }
 .bennett-staff .bennett-settings-navigation + div pre { max-width: 100%; overflow-x: auto; padding: 16px; border: 1px solid #343b45; border-radius: 6px; background: #191c20; color: #e8eaed; }
+/* Signature images retain their original ink colors on a paper surface. */
+body.bennett-staff .bennett-signature-preview { background: #fff !important; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 8px; }

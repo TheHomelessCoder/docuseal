@@ -337,7 +337,7 @@
                 </div>
                 <div dir="auto">
                   <% if field['type'].in?(%w[signature initials]) %>
-                    <div class="w-full bg-base-300 py-1">
+                    <div class="w-full bg-base-300 py-1 bennett-signature-preview">
                       <% img_height = attachments_index[value].metadata['height'] %>
                       <img class="object-contain mx-auto" style="<%= 'max-' if img_height %>height: <%= field['type'] == 'signature' ? 100 : 50 %>px" height="<%= img_height %>" width="<%= attachments_index[value].metadata['width'] %>" src="<%= attachments_index[value].url(time: service_url_time) %>" loading="lazy" alt="<%= field['name'] || field['title'] || field['type'] %>">
                     </div>
