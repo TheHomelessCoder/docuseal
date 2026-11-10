@@ -6,7 +6,9 @@
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
+  .bennett-staff template-builder { grid-template-columns: minmax(0, 1fr); }
+  .bennett-staff template-builder > div { min-width: 0; width: 100%; }
   .bennett-staff template-builder #title_container { gap: .5rem; }
   .bennett-staff template-builder #title_container > div:first-child { min-width: 0; flex: 1 1 auto; }
   .bennett-staff template-builder #title_container .template-name { min-width: 0; max-width: 100%; }
