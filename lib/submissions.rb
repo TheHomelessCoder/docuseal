@@ -30,7 +30,8 @@ module Submissions
   end
 
   def search(current_user, submissions, keyword, search_values: false, search_template: false)
-    if Docuseal.fulltext_search?
+    # Email identifiers need literal matching, including partial addresses and punctuation.
+    if Docuseal.fulltext_search? && keyword.to_s.exclude?('@')
       fulltext_search(current_user, submissions, keyword, search_template:)
     else
       plain_search(submissions, keyword, search_values:, search_template:)

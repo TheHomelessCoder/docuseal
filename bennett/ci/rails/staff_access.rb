@@ -124,15 +124,31 @@ User.transaction do
                                              email: 'private@example.test', password: SecureRandom.hex(24))
     other_template = Template.create!(account: other_account, author: other_user, name: 'Private template',
                                       submitters: [role])
-    create_submission.call('Anchor Private', :completed, other_template)
+    private_submission = create_submission.call('Anchor Private', :completed, other_template)
+    private_submission.submitters.first.update!(email: target.submitters.first.email)
+    SearchEntries.reindex_record(private_submission) if Docuseal.fulltext_search?
+    literal_email = create_submission.call('Literal Email Reviewer')
+    literal_email.submitters.first.update!(email: '123+practice_100%case@example.test')
+    wildcard_email = create_submission.call('Wildcard Lookalike Reviewer')
+    wildcard_email.submitters.first.update!(email: '123+practiceX100Ycase@example.test')
+    [literal_email, wildcard_email].each { |record| SearchEntries.reindex_record(record) } if Docuseal.fulltext_search?
     browser.get('/submissions', headers:)
     check.call(rows.call.exclude?("submission_#{target.id}"), 'target begins beyond the first page')
     browser.get('/submissions', params: { q: 'Anchor', status: 'completed', author: user.email,
                                           completed_at_from: Date.yesterday.iso8601 }, headers:)
     check.call(rows.call == ["submission_#{target.id}"],
                'search combines with status/date/author and account authorization')
-    browser.get('/submissions', params: { q: target.submitters.first.email, status: 'completed' }, headers:)
-    check.call(rows.call == ["submission_#{target.id}"], 'recipient email search finds an older submission')
+    email_queries = { full: target.submitters.first.email, uppercase: target.submitters.first.email.upcase,
+                      partial: target.submitters.first.email[3..] }
+    email_queries.each do |variant, email_query|
+      browser.get('/submissions', params: { q: email_query, status: 'completed' }, headers:)
+      check.call(rows.call == ["submission_#{target.id}"],
+                 "#{variant} recipient email search finds an older authorized submission")
+    end
+    ['123+practice_100%case@example.test', 'practice_100%case@example.test'].each do |email_query|
+      browser.get('/submissions', params: { q: email_query, status: 'completed' }, headers:)
+      check.call(rows.call == ["submission_#{literal_email.id}"], 'email punctuation is matched literally')
+    end
     browser.get('/submissions', params: { q: template.name }, headers:)
     check.call(rows.call.present?, 'global submissions search matches template names')
     browser.get('/submissions/archived', params: { q: 'Anchor' }, headers:)
