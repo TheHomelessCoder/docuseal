@@ -76,7 +76,7 @@ User.transaction do
     section = Nokogiri::HTML(browser.response.body)
     check.call(section.at_css('.bennett-staff-page-heading h1').present?, "page heading #{path}")
     check.call(section.at_css('.bennett-staff-nav [aria-current="page"]').present?, "active navigation #{path}")
-    check.call(section.css('link[href="/packs/bennett-staff-v1.css?v=6"]').one?, "versioned workspace styles #{path}")
+    check.call(section.css('link[href="/packs/bennett-staff-v1.css?v=7"]').one?, "versioned workspace styles #{path}")
   end
 
   # Small/empty lists used to hide search and offer a document upload instead.
