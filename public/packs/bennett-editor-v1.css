@@ -1,0 +1,26 @@
+.bennett-editor-context {
+  margin: 0 1rem .25rem;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1023px) {
+  .bennett-staff template-builder { grid-template-columns: minmax(0, 1fr); }
+  .bennett-staff template-builder > div { min-width: 0; width: 100%; }
+  .bennett-staff template-builder #title_container { gap: .5rem; }
+  .bennett-staff template-builder #title_container > div:first-child { min-width: 0; flex: 1 1 auto; }
+  .bennett-staff template-builder #title_container .template-name { min-width: 0; max-width: 100%; }
+  .bennett-staff template-builder #title_container .template-name > span:first-child {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bennett-staff template-builder #title_container .template-name > span:first-child:focus {
+    overflow-x: auto;
+    text-overflow: clip;
+  }
+  .bennett-staff template-builder #title_container > div:last-child { gap: .25rem; }
+}
