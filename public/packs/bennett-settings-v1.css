@@ -1,0 +1,12 @@
+@media (min-width: 768px) {
+  .bennett-staff .bennett-settings-disclosure { display: contents; }
+  .bennett-staff .bennett-settings-disclosure > summary { display: none; }
+}
+@media (max-width: 767px) {
+  .bennett-staff .bennett-settings-disclosure > summary { cursor: pointer; padding: 10px 12px; border: 1px solid var(--staff-border); border-radius: 6px; }
+  .bennett-staff .bennett-settings-disclosure > summary strong { display: block; margin-left: 16px; }
+  .bennett-staff .bennett-settings-disclosure:not([open]) #account_settings_menu { display: none; }
+  .bennett-staff #account_settings_menu .menu { flex-direction: column; flex-wrap: wrap; overflow: visible; max-width: none; gap: 0; }
+  .bennett-staff #account_settings_menu .menu > li { flex: initial; }
+  .bennett-staff #account_settings_menu a { white-space: normal; }
+}
