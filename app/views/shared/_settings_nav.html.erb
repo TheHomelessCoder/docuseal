@@ -1,3 +1,7 @@
+<% if bennett_staff? && !local_assigns[:expanded] %>
+  <link rel="stylesheet" href="/packs/bennett-settings-v1.css?v=3">
+  <script src="/packs/bennett-settings-v1.js?v=3" defer></script>
+<% end %>
 <% expanded = local_assigns[:expanded] %>
 <% nav_link_data = turbo_native_app? && !expanded ? { turbo_action: 'replace' } : {} %>
 <div class="bennett-settings-navigation <%= expanded ? 'block -mx-3 md:mx-0' : 'w-full md:w-52 flex-none' %> <%= 'md:sticky md:top-0 md:self-start' if turbo_native_app? && !expanded %>">
@@ -9,6 +13,7 @@
       </a>
     </div>
   <% end %>
+  <% if bennett_staff? && !expanded %><details class="bennett-settings-disclosure" open><summary>Choose settings section <strong data-settings-current></strong></summary><% end %>
   <div id="account_settings_menu" class="<%= 'hidden md:block' unless expanded %>">
     <menu-active>
       <ul class="menu px-0" style="<%= '--n: var(--b3); --nc: var(--bc);' if expanded %>">
@@ -172,4 +177,5 @@
       </div>
     <% end %>
   </div>
+  <% if bennett_staff? && !expanded %></details><% end %>
 </div>
