@@ -1,18 +1,23 @@
 <div id="<%= dom_id(submission) %>" class="bennett-submission-item bg-base-200 rounded-2xl flex flex-col lg:flex-row" data-native-title="<%= submission.name.presence || (local_assigns[:template] || submission.template)&.name if turbo_native_app? %>">
+  <% document_name = submission.name || (local_assigns[:template] || submission.template)&.name %>
   <% if local_assigns[:with_template] %>
     <% template = submission.template %>
-    <a href="<%= template ? template_path(template) : submission_path(submission) %>" data-native-title="<%= template&.name %>" data-native-actions="<%= (!template.archived_at? && can?(:update, template) ? 'pencil,menu' : 'file_text,menu') if template && turbo_native_app? %>" class="px-5 lg:pr-3 py-3 lg:pb-4 group lg:rounded-l-2xl lg:rounded-tr-none rounded-t-2xl flex lg:flex-col justify-between lg:w-52 w-full flex-shrink-0 bg-base-300/60 space-x-2 lg:space-x-0">
+    <a href="<%= template ? template_path(template) : submission_path(submission) %>" data-native-title="<%= template&.name %>" data-native-actions="<%= (!template.archived_at? && can?(:update, template) ? 'pencil,menu' : 'file_text,menu') if template && turbo_native_app? %>" class="bennett-submission-document px-5 lg:pr-3 py-3 lg:pb-4 group lg:rounded-l-2xl lg:rounded-tr-none rounded-t-2xl flex lg:flex-col justify-between lg:w-52 w-full flex-shrink-0 bg-base-300/60 space-x-2 lg:space-x-0">
       <div>
         <div class="font-medium items-start w-full group-hover:link text-sm flex space-x-1">
           <%= svg_icon('file_text', class: 'w-4 h-4 mt-0.5 flex-shrink-0') %>
           <span style="overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;">
-            <% (submission.name || template&.name).to_s.split(/(_)/).each do |item| %><%= item %><wbr><% end %>
+            <% (bennett_staff? ? bennett_staff_document_title(document_name) : document_name.to_s).split(/(_)/).each do |item| %><%= item %><wbr><% end %>
             <%= svg_icon('arrow_right', class: 'w-4 h-4 sm:inline group-hover:visible invisible hidden') %>
           </span>
+          <% if bennett_staff? %><%= render 'shared/bennett_document_language', template: template, submission: submission %><% end %>
         </div>
       </div>
       <div class="flex-shrink-0 lg:mt-2 max-w-[50%] lg:max-w-full">
-        <div class="flex text-xs flex-col text-base-content/60  space-y-0.5">
+        <div class="bennett-submission-meta flex text-xs flex-col text-base-content/60 space-y-0.5">
+          <% if bennett_staff? && bennett_staff_practice_document?(document_name) %>
+            <span class="bennett-practice-label">Practice · not a contract</span>
+          <% end %>
           <span class="flex items-center space-x-1">
             <%= svg_icon('user', class: 'w-4 h-4 flex-shrink-0') %>
             <span class="truncate"><%= (submission.created_by_user || template.author).full_name.presence || (submission.created_by_user || template.author).email.to_s.sub(/\+\w+@/, '@') %></span>
@@ -25,7 +30,7 @@
       </div>
     </a>
   <% end %>
-  <div class="w-full min-w-0 flex flex-col md:flex-row space-y-4 md:space-y-0 md:justify-between px-5 md:px-6 pb-5 md:items-center pt-5 relative cursor-pointer">
+  <div class="bennett-submission-body w-full min-w-0 flex flex-col md:flex-row <%= 'space-y-4 md:space-y-0' unless bennett_staff? %> md:justify-between px-5 md:px-6 pb-5 md:items-center pt-5 relative cursor-pointer">
     <% submitters = (submission.template_submitters || submission.template.submitters).filter_map { |item| submission.submitters.find { |e| e.uuid == item['uuid'] } } %>
     <% is_submission_completed = submission.completed_at? %>
     <% if submitters.size == 1 %>
@@ -63,11 +68,11 @@
           </span>
         </div>
       </div>
-      <div class="flex space-x-2 items-center z-[1]">
+      <div class="bennett-submission-actions flex <%= 'space-x-2' unless bennett_staff? %> items-center z-[1]">
         <% if submitter.completed_at? %>
           <div class="flex-1 min-w-0 md:flex-none">
             <div class="w-full md:w-fit">
-              <download-button data-src="<%= submission_download_index_path(submission) %>" class="btn btn-sm max-sm:text-[13px] btn-neutral text-white w-full md:w-36">
+              <download-button <% if bennett_staff? %>role="button" tabindex="0"<% end %> aria-label="<%= t('download') %>" data-src="<%= submission_download_index_path(submission) %>" class="btn btn-sm max-sm:text-[13px] btn-neutral text-white w-full md:w-36">
                 <span class="flex items-center justify-center space-x-1 <%= 'md:space-x-2' if t('download').length < 11 %>" data-target="download-button.defaultButton">
                   <%= svg_icon('download', class: 'w-5 h-5 max-sm:w-4 max-sm:h-4 stroke-2') %>
                   <span class="inline"><%= t('download') %></span>
@@ -114,8 +119,8 @@
         <% end %>
       </div>
     <% else %>
-      <div class="space-y-1 w-full min-w-0 md:mr-2">
-        <div class="flex flex-col md:flex-row md:items-center gap-3">
+      <div class="bennett-submission-parties space-y-1 w-full min-w-0 md:mr-2">
+        <div class="bennett-submission-signers flex flex-col md:flex-row md:items-center gap-3">
           <% if is_submission_completed %>
             <% latest_submitter = submitters.select(&:completed_at?).max_by(&:completed_at) %>
             <a href="<%= submission_path(submission) %>" class="z-[1] tooltip tooltip-no-touch flex" data-tip="<%= l(latest_submitter.status_event_at.in_time_zone(current_account.timezone), format: :short, locale: current_account.locale) %>">
@@ -130,7 +135,7 @@
               </span>
             </div>
           <% end %>
-          <div class="w-full min-w-0 <%= is_submission_completed ? 'space-y-1' : 'space-y-4' %> md:space-y-0">
+          <div class="bennett-submission-recipients w-full min-w-0 <%= (is_submission_completed ? 'space-y-1' : 'space-y-4') unless bennett_staff? %> md:space-y-0">
             <% submitters.each_with_index do |submitter, index| %>
               <div class="relative flex justify-between items-center space-x-3">
                 <span class="flex items-center gap-2 min-w-0">
@@ -158,7 +163,7 @@
                   </span>
                 </span>
                 <% if submitter.completed_at? && !is_submission_completed %>
-                  <download-button data-src="<%= submitter_download_index_path(submitter) %>" class="btn btn-xs btn-neutral text-white w-12 md:w-36 shrink-0 z-[1]">
+                  <download-button <% if bennett_staff? %>role="button" tabindex="0"<% end %> aria-label="<%= t('download') %>" data-src="<%= submitter_download_index_path(submitter) %>" class="btn btn-xs btn-neutral text-white w-12 md:w-36 shrink-0 z-[1]">
                     <span class="flex items-center justify-center space-x-1 md:space-x-2" data-target="download-button.defaultButton">
                       <%= svg_icon('download', class: 'w-4 h-4 stroke-2') %>
                       <span class="hidden md:inline"><%= t('download') %></span>
@@ -187,12 +192,12 @@
           </div>
         </div>
       </div>
-      <div class="flex space-x-2 items-center z-[1]">
+      <div class="bennett-submission-actions flex <%= 'space-x-2' unless bennett_staff? %> items-center z-[1]">
         <% if is_submission_completed %>
           <% latest_submitter = submitters.select(&:completed_at?).max_by(&:completed_at) %>
           <div class="flex-1 min-w-0 md:flex-none">
             <div class="w-full md:w-fit">
-              <download-button data-src="<%= submission_download_index_path(submission) %>" class="btn btn-sm max-sm:text-[13px] btn-neutral text-white w-full md:w-36 z-[1]">
+              <download-button <% if bennett_staff? %>role="button" tabindex="0"<% end %> aria-label="<%= t('download') %>" data-src="<%= submission_download_index_path(submission) %>" class="btn btn-sm max-sm:text-[13px] btn-neutral text-white w-full md:w-36 z-[1]">
                 <span class="flex items-center justify-center space-x-1 md:space-x-2" data-target="download-button.defaultButton">
                   <%= svg_icon('download', class: 'w-5 h-5 max-sm:w-4 max-sm:h-4 stroke-2') %>
                   <span class="inline"><%= t('download') %></span>

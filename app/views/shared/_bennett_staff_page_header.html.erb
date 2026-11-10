@@ -1,7 +1,12 @@
 <section class="bennett-staff-page-header" aria-labelledby="bennett-staff-page-title">
   <div class="bennett-staff-page-heading">
     <p class="bennett-staff-eyebrow">Signing workspace<% if bennett_staff_section == 'settings' %> / Settings<% end %></p>
-    <h1 id="bennett-staff-page-title"><%= bennett_staff_title(template: @template, submission: @submission) %></h1>
+    <div class="bennett-staff-title-line">
+      <h1 id="bennett-staff-page-title"><%= bennett_staff_title(template: @template, submission: @submission) %></h1>
+      <%= render 'shared/bennett_document_language', template: (@template || @submission&.template), submission: @submission %>
+      <% document_name = @submission&.name.presence || @submission&.template&.name || @template&.name %>
+      <% if bennett_staff_practice_document?(document_name) %><span class="bennett-practice-label">Practice · not a contract</span><% end %>
+    </div>
     <p class="bennett-staff-description"><%= bennett_staff_description %></p>
   </div>
 </section>

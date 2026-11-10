@@ -35,6 +35,8 @@ The staff interface uses JUD's compact navigation, page headings, Inter/system f
 
 Search and status/date/author/folder filters stay available on staff submission lists, including small or empty lists, completed submissions, archives and each template's submissions. Queries run across the authorized records before pagination; changing a search or filter starts from the first page. The submissions dashboard reviews existing signing requests and has no template-upload, template-create or document-dropzone prompt. Template management remains under Templates.
 
+Staff lists use compact document, recipient, status and action rows. Spanish retainers show an **Español** badge in template lists, submission lists and document headings. Language comes from the submission's frozen document schema, then the template's document schema; older Bennett imports also recognize the exact Spanish retainer heading. Unknown or mixed-language documents are not guessed from a staff or client preference. Practice titles show a shorter document name alongside an explicit **Practice · not a contract** marker; stored names and document contents are unchanged.
+
 Validation includes `bundle exec ruby bennett/test/staff_access.rb` (real RSA/JWT checks), `node bennett/test/staff_layout.test.cjs` (the real navbar ERB and theme assets at mobile/desktop widths), and `bennett/ci/rails/staff_access.rb` in the production-mode smoke stack. The latter checks actual Rails/Devise sessions, CSRF, logout, revoked users, the authenticator flow and rendering of the template, editor and settings sections inside a rolled-back synthetic transaction. No real email or document is used.
 
 ## Build locally
