@@ -82,7 +82,8 @@ export async function runJudRetainerFlows(h) {
           }, { slug: attorney.slug, method });
           demand(`${label}: early attorney ${method} is refused`, outcome.csrf && outcome.status === 422, outcome);
         }
-        demand(`${label}: early attorney download is refused`, (await early.request.get(`https://${SIGN}/s/${attorney.slug}/download`)).status() === 422);
+        const earlyDownload = await early.evaluate(async slug => (await fetch(`/s/${slug}/download`)).status, attorney.slug);
+        demand(`${label}: early attorney download is refused`, earlyDownload === 422);
         issued = await jud.submission(submissionId);
         demand(`${label}: blocked writes leave both signers pending`, issued.submitters.every(s => !s.completed_at));
 
@@ -97,9 +98,12 @@ export async function runJudRetainerFlows(h) {
           && (await clientPage.locator('html').getAttribute('lang')).startsWith(language));
         demand(`${label}: signer page fits the viewport`, await clientPage.evaluate(() => document.documentElement.scrollWidth - innerWidth <= 1));
         const download = async () => {
-          const response = await clientPage.request.get(`https://${SIGN}/s/${client.slug}/download`);
-          demand(`${label}: unsigned client download is available`, response.status() === 200);
-          const links = await response.json();
+          const response = await clientPage.evaluate(async slug => {
+            const value = await fetch(`/s/${slug}/download`);
+            return { status: value.status, body: await value.text() };
+          }, client.slug);
+          demand(`${label}: unsigned client download is available`, response.status === 200, response.status);
+          const links = JSON.parse(response.body);
           return pdf(new URL(links[0], `https://${SIGN}`).href);
         };
         const unsigned = await download(), repeated = await download();
