@@ -113,6 +113,17 @@ jud_email_context=$(rails_runner jud_email_context.rb)
 echo "$jud_email_context"
 echo "$jud_email_context" | grep -q '"jud_email_context":"passed"'
 
+step "verify per-agreement document ID headers in generated previews and results"
+document_reference=$(rails_runner document_reference.rb)
+echo "$document_reference"
+echo "$document_reference" | grep -q '"document_reference":"passed"'
+for language in en es; do
+  for kind in preview result; do
+    docker exec "$("${compose[@]}" ps -q docuseal)" cat "/tmp/bennett-reference-$language-$kind.pdf" \
+      > "$SMOKE_DIR/out/bennett-reference-$language-$kind.pdf"
+  done
+done
+
 step "seed the synthetic retainer template, import draft and JUD webhook"
 CI_WEBHOOK_URL=http://jud:8090/webhooks/docuseal CI_WEBHOOK_SECRET=$(setting CI_WEBHOOK_SECRET)
 export CI_WEBHOOK_URL CI_WEBHOOK_SECRET
@@ -132,6 +143,30 @@ set +e
 node "$here/smoke.mjs"
 smoke=$?
 set -e
+
+if [ "$smoke" -eq 0 ]; then
+  step "verify actual unsigned, signed and audit PDFs from all four private-link browser flows"
+  CI_RETAINER_FLOW_EVIDENCE=$(cat "$SMOKE_DIR/out/jud-retainer-flows.json")
+  export CI_RETAINER_FLOW_EVIDENCE
+  retainer_flow_evidence=$(rails_runner retainer_flow_evidence.rb -e CI_RETAINER_FLOW_EVIDENCE)
+  unset CI_RETAINER_FLOW_EVIDENCE
+  echo "$retainer_flow_evidence"
+  echo "$retainer_flow_evidence" | grep -q '"retainer_flow_evidence":"passed"'
+  step "verify all final digital seals independently with Poppler/NSS"
+  mkdir -m 700 "$SMOKE_DIR/nssdb"
+  certutil -N -d "sql:$SMOKE_DIR/nssdb" --empty-password
+  for language in en es; do
+    for device in desktop mobile; do
+      evidence="$SMOKE_DIR/out/private-link-$language-$device-signature.txt"
+      # Trust is checked against the exact CI root by the Rails fixture above;
+      # NSS independently checks the CMS signature and complete byte range.
+      pdfsig -nssdir "$SMOKE_DIR/nssdb" -nocert -no-ocsp \
+        "$SMOKE_DIR/out/private-link-$language-$device-signed.pdf" > "$evidence" 2>&1
+      grep -q 'Signature Validation: Signature is Valid\.' "$evidence"
+      grep -q 'Total document signed' "$evidence"
+    done
+  done
+fi
 
 step "container posture"
 posture=0

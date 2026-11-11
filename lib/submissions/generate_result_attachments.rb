@@ -203,6 +203,8 @@ module Submissions
         end
       end
 
+      BennettDocumentReference.add_headers(pdfs_index, submitter.submission) if with_signature_id
+
       fill_submitter_fields(submitter, submitter.account, pdfs_index, with_signature_id:, is_flatten:,
                                                                       with_submitter_timezone:,
                                                                       with_file_links:,
@@ -215,7 +217,7 @@ module Submissions
     def fill_submitter_fields(submitter, account, pdfs_index, with_signature_id:, is_flatten:, with_headings: nil,
                               with_submitter_timezone: false, with_signature_id_reason: true,
                               with_timestamp_seconds: false, with_signature_id_completed_at: false,
-                              with_file_links: nil,
+                              with_file_links: nil, hide_pending_dates: false,
                               file_links_expire_at: Accounts.link_expires_at(account))
       cell_layouters = Hash.new do |hash, valign|
         hash[valign] = HexaPDF::Layout::TextLayouter.new(text_valign: valign.to_sym, text_align: :center)
@@ -281,6 +283,7 @@ module Submissions
           value = submitter.values[field['uuid']]
           value = field['default_value'] if field['type'] == 'heading'
           value = field['default_value'] if field['type'] == 'strikethrough' && value.nil? && field['conditions'].blank?
+          next if hide_pending_dates && field['type'] == 'date' && value == '{{date}}'
 
           text_align = field.dig('preferences', 'align').to_s.presence_in(TEXT_ALIGNS)&.to_sym ||
                        (value.to_s.match?(RTL_REGEXP) ? :right : :left)

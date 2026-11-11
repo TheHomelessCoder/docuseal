@@ -37,6 +37,9 @@ module Submissions
       pdfs_index = GenerateResultAttachments.build_pdfs_index(submission, flatten: is_flatten,
                                                                           incremental: is_rotate_incremental)
 
+      BennettDocumentReference.add_headers(pdfs_index, submission) if with_signature_id
+      hide_pending_dates = BennettJudEmailContext.for_submission(submission).present?
+
       submitters = if submitter
                      submission.submitters.where(id: submitter.id)
                    else
@@ -48,7 +51,7 @@ module Submissions
                                                         with_signature_id:, is_flatten:, with_headings: index.zero?,
                                                         with_submitter_timezone:, with_file_links:,
                                                         file_links_expire_at:, with_signature_id_reason:,
-                                                        with_timestamp_seconds:, with_signature_id_completed_at:)
+                                                        with_timestamp_seconds:, with_signature_id_completed_at:, hide_pending_dates:)
       end
 
       template = submission.template
