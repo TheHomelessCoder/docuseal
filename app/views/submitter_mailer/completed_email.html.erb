@@ -3,5 +3,8 @@
 <% else %>
   <p><%= t('hi_there') %>,</p>
   <p><%= I18n.t(:name_has_been_completed_by_submitters, name: @submitter.submission.name || @submitter.submission.template&.name, submitters: @submitter.submission.submitters.order(:completed_at).map { |e| e.name || e.email || e.phone }.uniq.join(', ')) %></p>
-  <p><%= link_to submission_url(@submitter.submission), submission_url(@submitter.submission) %></p>
+  <% if (staff_url = BennettMailerLinks.submission_url(@submitter.submission)) %>
+    <p><%= link_to staff_url, staff_url %></p>
+  <% end %>
 <% end %>
+<%= render 'bennett_jud_context', context: @bennett_jud_context %>

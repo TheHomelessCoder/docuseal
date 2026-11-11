@@ -22,6 +22,10 @@ Each change is a normal commit on `bennett-legal`; `git log upstream/master..ben
 - **Literal recipient email search** (2026-11-10). Submission searches containing an at-sign use case-insensitive literal matching for full and partial email addresses, including aliases and wildcard characters. The authorized record scope and existing filters apply before pagination. Other queries retain the configured full-text search behavior.
 - **Signature preview contrast** (2026-11-10). The staff submission details show signature and initials previews on a white paper surface in both themes, keeping the original ink readable. This changes only the review panel presentation; stored signature images, signed PDFs and audit evidence retain their original bytes.
 
+- **JUD context in staff mail** (2026-11-10). Invitations, completion, decline and signed-copy emails can show a server-provided JUD case/lead reference. The context must match the JUD issuance and firm signer, point to the fixed JUD origin and address only the firm signer or active native staff. Invitations preserve an existing JUD link instead of duplicating it. JUD-tagged signed copies are rendered separately for each recipient; client and mixed-recipient messages do not receive the internal context. Existing signing, consent, document, account, delivery and authorization settings remain authoritative. The native email letterhead, artwork, attachments and DocuSeal attribution are preserved.
+
+- **Staff email administration links** (2026-11-10). Completion/decline links and the `{submission.link}` email variable use the validated Access staff host when selected. Public signer and signed-document links retain their existing destination. An invalid staff configuration omits that administration link without suppressing document-copy mail.
+
 ## Source availability
 
 Anyone receiving this image, or using the service over a network, can get the source from the public fork at the commit in the image label. Keep that fork public and keep every published image's commit reachable there (the nightly workflow tags each published commit `verified-<date>-<commit>`).

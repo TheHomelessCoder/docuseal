@@ -181,7 +181,7 @@ module ReplaceEmailVariables
   end
 
   def build_submission_link(submission)
-    Rails.application.routes.url_helpers.submission_url(submission, **Docuseal.default_url_options)
+    BennettMailerLinks.submission_url(submission)
   end
 
   def build_submission_submitters(submission)
