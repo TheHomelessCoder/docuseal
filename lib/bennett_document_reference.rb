@@ -24,12 +24,14 @@ module BennettDocumentReference
       values_hash = "#{Submissions::GeneratePreviewAttachments.build_submitter_values_hash(submitter)}:#{MARKER}"
       cached = submitter.preview_documents.to_a
       documents = submission.schema_documents.preload(:blob).to_a
-      schema = submission.template_schema || submission.template.schema
+      schema = Submissions.filtered_conditions_schema(submission)
       expected = schema.filter_map do |item|
         item['attachment_uuid'] if documents.any? { |document| document.uuid == item['attachment_uuid'] }
       end
       images = documents.select(&:image?)
-      expected << Submissions::GenerateResultAttachments.images_pdf_uuid(images) if images.size > 1
+      if images.count { |image| expected.include?(image.uuid) } > 1
+        expected << Submissions::GenerateResultAttachments.images_pdf_uuid(images)
+      end
 
       if cached.map { |attachment| attachment.metadata['original_uuid'] }.tally == expected.tally &&
          cached.all? { |attachment| attachment.metadata['values_hash'] == values_hash }

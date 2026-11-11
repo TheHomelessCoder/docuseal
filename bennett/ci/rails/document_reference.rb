@@ -98,6 +98,24 @@ class BennettReferenceFixture
   end
 
   def run
+    cached_submission = build('en')
+    signer = cached_submission.submitters.first
+    first = BennettDocumentReference.preview_attachments(signer).first
+    source_uuid = first.metadata.fetch('original_uuid')
+    original_blob = first.blob_id
+    duplicate_blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new(first.download), filename: 'duplicate.pdf')
+    ActiveStorage::Attachment.create!(record: signer, name: 'preview_documents', blob: duplicate_blob,
+                                      metadata: first.metadata.deep_dup)
+    check(signer.preview_documents.reload.size == 2, 'duplicate-cache negative control is present')
+    repaired = BennettDocumentReference.preview_attachments(signer)
+    check(repaired.size == 1 && signer.preview_documents.reload.size == 1, 'duplicate cache is replaced with one source preview')
+    check(repaired.first.metadata['original_uuid'] == source_uuid && repaired.first.blob_id != original_blob,
+          'duplicate repair regenerates the expected source')
+    repaired.first.update!(metadata: repaired.first.metadata.merge('original_uuid' => 'foreign-source'))
+    corrected = BennettDocumentReference.preview_attachments(signer)
+    check(corrected.size == 1 && corrected.first.metadata['original_uuid'] == source_uuid, 'same-size foreign cache is replaced')
+    inspect_pdf(HexaPDF::Document.new(io: StringIO.new(corrected.first.download)), cached_submission)
+
     references = %w[en es].map do |language|
       submission = build(language)
       preview = Submissions::GeneratePreviewAttachments.call(submission).first
