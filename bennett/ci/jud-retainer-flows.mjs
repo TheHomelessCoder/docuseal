@@ -104,10 +104,14 @@ export async function runJudRetainerFlows(h) {
           }, client.slug);
           demand(`${label}: unsigned client download is available`, response.status === 200, response.status);
           const links = JSON.parse(response.body);
-          return pdf(new URL(links[0], `https://${SIGN}`).href);
+          demand(`${label}: one preview URL per source document`, Array.isArray(links) && links.length === clone.documents.length, links.length);
+          return Promise.all(links.map(link => pdf(new URL(link, `https://${SIGN}`).href)));
         };
-        const unsigned = await download(), repeated = await download();
-        demand(`${label}: repeated unsigned downloads reuse identical bytes`, sha256(unsigned) === sha256(repeated));
+        const [first, second] = await Promise.all([download(), download()]);
+        const repeated = await download();
+        demand(`${label}: concurrent and repeated downloads reuse identical bytes`, first.every((bytes, i) =>
+          sha256(bytes) === sha256(second[i]) && sha256(bytes) === sha256(repeated[i])));
+        const unsigned = first[0];
         writeFileSync(join(OUT, `${label}-unsigned.pdf`), unsigned);
         await completeForm(clientPage, `${label}-client`, true);
         const afterClient = await until(async () => {
