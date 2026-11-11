@@ -119,7 +119,8 @@ echo "$document_reference"
 echo "$document_reference" | grep -q '"document_reference":"passed"'
 for language in en es; do
   for kind in preview result; do
-    docker cp "$("${compose[@]}" ps -q docuseal):/tmp/bennett-reference-$language-$kind.pdf" "$SMOKE_DIR/out/"
+    docker exec "$("${compose[@]}" ps -q docuseal)" cat "/tmp/bennett-reference-$language-$kind.pdf" \
+      > "$SMOKE_DIR/out/bennett-reference-$language-$kind.pdf"
   done
 done
 
