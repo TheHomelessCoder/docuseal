@@ -18,12 +18,27 @@ module BennettDocumentReference
   end
 
   def preview_attachments(submitter)
-    values_hash = "#{Submissions::GeneratePreviewAttachments.build_submitter_values_hash(submitter)}:#{MARKER}"
-    cached = submitter.preview_documents.to_a
-    return cached if cached.present? && cached.all? { |attachment| attachment.metadata['values_hash'] == values_hash }
+    submitter.with_lock do
+      submitter.preview_documents.reset
+      submission = submitter.submission
+      values_hash = "#{Submissions::GeneratePreviewAttachments.build_submitter_values_hash(submitter)}:#{MARKER}"
+      cached = submitter.preview_documents.to_a
+      documents = submission.schema_documents.preload(:blob).to_a
+      schema = submission.template_schema || submission.template.schema
+      expected = schema.filter_map do |item|
+        item['attachment_uuid'] if documents.any? { |document| document.uuid == item['attachment_uuid'] }
+      end
+      images = documents.select(&:image?)
+      expected << Submissions::GenerateResultAttachments.images_pdf_uuid(images) if images.size > 1
 
-    ApplicationRecord.no_touching { cached.each(&:destroy) }
-    Submissions::GeneratePreviewAttachments.call(submitter.submission, submitter:, values_hash:)
+      if cached.map { |attachment| attachment.metadata['original_uuid'] }.tally == expected.tally &&
+         cached.all? { |attachment| attachment.metadata['values_hash'] == values_hash }
+        next cached
+      end
+
+      ApplicationRecord.no_touching { cached.each(&:destroy) }
+      Submissions::GeneratePreviewAttachments.call(submission, submitter:, values_hash:)
+    end
   end
 
   def add_headers(pdfs, submission)

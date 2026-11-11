@@ -32,6 +32,8 @@ Each change is a normal commit on `bennett-legal`; `git log upstream/master..ben
 
 - **Signing certificate serial compatibility** (2026-11-10). Newly generated leaf, intermediate and root certificates use positive serial numbers within the RFC 5280 20-octet DER limit. Acceptance verifies actual completed PDFs using OpenSSL with the pinned CI root and independently using Poppler/NSS. Existing certificate configuration and signed documents are not changed automatically.
 
+- **JUD preview cache serialization** (2026-11-10). Preview generation locks each submitter and replaces stale, incomplete or duplicate cached source inventories.
+
 ## Source availability
 
 Anyone receiving this image, or using the service over a network, can get the source from the public fork at the commit in the image label. Keep that fork public and keep every published image's commit reachable there (the nightly workflow tags each published commit `verified-<date>-<commit>`).
