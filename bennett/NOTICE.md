@@ -28,6 +28,8 @@ Each change is a normal commit on `bennett-legal`; `git log upstream/master..ben
 
 - **Per-agreement document header** (2026-11-10). New JUD-tagged agreement previews and generated results can show the native DocuSeal document ID in the upper-left margin on every page. It reuses the submission's existing reference, respects the account signature-ID setting and avoids duplicate headers across generation passes. Native footer/audit references and existing stored signed documents remain intact. Ordinary uploads without validated JUD context retain their prior behavior.
 
+- **Unsigned JUD downloads and flow acceptance** (2026-11-10). Private-link JUD downloads use a cached generated preview before the first signer completes, retaining the document reference and locked prefills. Disposable English/Spanish desktop/mobile browser flows check both signers, recipient order, email context and completed PDF/audit evidence.
+
 ## Source availability
 
 Anyone receiving this image, or using the service over a network, can get the source from the public fork at the commit in the image label. Keep that fork public and keep every published image's commit reachable there (the nightly workflow tags each published commit `verified-<date>-<commit>`).

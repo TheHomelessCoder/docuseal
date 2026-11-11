@@ -144,6 +144,16 @@ node "$here/smoke.mjs"
 smoke=$?
 set -e
 
+if [ "$smoke" -eq 0 ]; then
+  step "verify actual unsigned, signed and audit PDFs from all four private-link browser flows"
+  CI_RETAINER_FLOW_EVIDENCE=$(cat "$SMOKE_DIR/out/jud-retainer-flows.json")
+  export CI_RETAINER_FLOW_EVIDENCE
+  retainer_flow_evidence=$(rails_runner retainer_flow_evidence.rb -e CI_RETAINER_FLOW_EVIDENCE)
+  unset CI_RETAINER_FLOW_EVIDENCE
+  echo "$retainer_flow_evidence"
+  echo "$retainer_flow_evidence" | grep -q '"retainer_flow_evidence":"passed"'
+fi
+
 step "container posture"
 posture=0
 services='postgres valkey docuseal'

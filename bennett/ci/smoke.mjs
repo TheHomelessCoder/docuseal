@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { PDFDocument } from 'pdf-lib';
 import { chromium } from 'playwright';
 import { emailWithInlineAssets } from './mail-assets.mjs';
+import { runJudRetainerFlows } from './jud-retainer-flows.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIR = process.env.SMOKE_DIR;
@@ -330,12 +331,13 @@ async function passEmailCode(page, email, label) {
   await Promise.all([page.waitForNavigation({ waitUntil: 'load', timeout: 60_000 }), input.press('Enter')]);
   if (await page.locator('input[name="one_time_code"]').count()) throw new Error(`${label}: verification code refused`);
 }
-async function completeForm(page, label) {
+async function completeForm(page, label, requireConsent = false) {
   await page.waitForSelector('submission-form', { state: 'attached', timeout: 60_000 });
   await sleep(1500);
   const expand = page.locator('#expand_form_button');
   if (await expand.isVisible().catch(() => false)) await expand.click();
   const form = page.locator('#form_container');
+  let consentSeen = false;
   for (let i = 0; i < 12 && !(await page.locator('#form_completed').count()); i++) {
     const canvas = form.locator('canvas').first();
     if (await canvas.isVisible().catch(() => false)) {
@@ -343,13 +345,18 @@ async function completeForm(page, label) {
       await drawSignature(page, canvas);
     }
     const box = form.locator('input[type=checkbox]').first();
-    if (await box.isVisible().catch(() => false) && !(await box.isChecked())) await box.check();
+    if (await box.isVisible().catch(() => false)) {
+      if (requireConsent && !consentSeen) check(`${label}: consent starts unchecked`, !(await box.isChecked()));
+      consentSeen = true;
+      if (!(await box.isChecked())) await box.check();
+    }
     const next = page.locator('#submit_form_button');
     if (!(await next.isVisible().catch(() => false))) { await sleep(1000); continue; }
     await next.click();
     await sleep(2000);
   }
   await page.waitForSelector('#form_completed', { state: 'attached', timeout: 60_000 });
+  if (requireConsent) check(`${label}: client deliberately selected consent`, consentSeen);
   await screenshot(page, `${label}-done`);
 }
 
@@ -641,6 +648,9 @@ try {
     check('approved template still has no submissions of its own', !(await jud.templateHasSubmissions(template.id, false)));
     check('the clone reports its submissions', await jud.templateHasSubmissions(cancelClone.id, false));
   });
+
+  await runJudRetainerFlows({ run, OUT, SIGN, browser, check, step, jud, pdf, mail, signerLink,
+    completeForm, events, watch, screenshot, letterhead, until, sha256 });
 } catch (error) {
   check('smoke test ran to the end', false, error.message);
 } finally {

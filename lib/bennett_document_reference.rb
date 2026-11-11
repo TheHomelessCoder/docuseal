@@ -12,6 +12,20 @@ module BennettDocumentReference
 
   module_function
 
+  def enabled_for?(submission)
+    BennettJudEmailContext.for_submission(submission).present? &&
+      AccountConfig.exists?(account_id: submission.account_id, key: AccountConfig::WITH_SIGNATURE_ID, value: true)
+  end
+
+  def preview_attachments(submitter)
+    values_hash = "#{Submissions::GeneratePreviewAttachments.build_submitter_values_hash(submitter)}:#{MARKER}"
+    cached = submitter.preview_documents.to_a
+    return cached if cached.present? && cached.all? { |attachment| attachment.metadata['values_hash'] == values_hash }
+
+    ApplicationRecord.no_touching { cached.each(&:destroy) }
+    Submissions::GeneratePreviewAttachments.call(submitter.submission, submitter:, values_hash:)
+  end
+
   def add_headers(pdfs, submission)
     return unless BennettJudEmailContext.for_submission(submission)
 

@@ -30,6 +30,8 @@ class SubmitFormDownloadController < ApplicationController
     attachments =
       if last_completed_submitter
         Submitters.select_attachments_for_download(last_completed_submitter)
+      elsif BennettDocumentReference.enabled_for?(@submitter.submission)
+        BennettDocumentReference.preview_attachments(@submitter)
       else
         @submitter.submission.schema_documents.preload(:blob)
       end

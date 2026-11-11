@@ -10,6 +10,7 @@ require 'json'
 
 account = Account.first!
 user = account.users.first!
+account.account_configs.find_or_initialize_by(key: AccountConfig::WITH_SIGNATURE_ID).update!(value: true)
 
 pdf = HexaPDF::Document.new
 2.times do |index|
