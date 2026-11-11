@@ -75,6 +75,12 @@ The production server deploys the newest `verified-*` image with `host.py update
 - **Smoke test:** the artifact `smoke-test-<run>` has `results.json`, screenshots and the stack's logs. `template representation matches the pinned one` failing means DocuSeal now returns templates differently than the version JUD enrolled its templates on; every approved template's pinned hash in JUD (`LIVE_TEMPLATE_DRIFT`) would drift, so update JUD before `ci/expected/template-projection.json`. The pinned file was recorded from the production image (`bennett-docuseal@sha256:e2dc9ab7…`, DocuSeal 3.3.4) on 2026-11-03.
 - **Trivy:** take the fix (often it is already in the next upstream release), or add a scoped, expiring entry to `ci/trivyignore.yaml` with the reason.
 
+## JUD document reference
+
+With **Add signature ID to the documents** enabled, newly generated JUD agreement previews and results show `DocuSeal Document ID: …` in the upper-left margin of every page. The 8-point header uses the native per-submission reference, so it agrees with the existing footer and audit reference and remains stable across signing stages. Separate agreements have separate references. A PDF metadata marker prevents duplicate headers and rejects a mismatched reference.
+
+The header requires validated JUD issuance/firm context. Ordinary uploads retain their prior behavior. No fixed identifier is added to reusable templates, and this code does not regenerate stored signed documents. `ci/rails/document_reference.rb` checks both real renderers in the disposable smoke database, including account setting, context scope, duplicate prevention and reference stability.
+
 ## JUD record context in staff email
 
 JUD can attach `metadata.bennett_jud_context` to the firm submitter using the supported API. Version `jud-retainer-email/1` contains `issuance_id`, `record_type` (`case` or `lead`), `reference`, `url` and `client_name`. The native helper requires the matching submission `bennett_issuance_id`, the preserved second signing role/external ID, the exact context keys, and a supported HTTPS URL on `jud.bennettlegal.com`. It adds context only for the firm signer or active staff in the same native account, excluding the Client role even if that address has a native staff account.

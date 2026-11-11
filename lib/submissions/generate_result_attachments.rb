@@ -203,6 +203,8 @@ module Submissions
         end
       end
 
+      BennettDocumentReference.add_headers(pdfs_index, submitter.submission) if with_signature_id
+
       fill_submitter_fields(submitter, submitter.account, pdfs_index, with_signature_id:, is_flatten:,
                                                                       with_submitter_timezone:,
                                                                       with_file_links:,

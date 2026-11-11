@@ -113,6 +113,11 @@ jud_email_context=$(rails_runner jud_email_context.rb)
 echo "$jud_email_context"
 echo "$jud_email_context" | grep -q '"jud_email_context":"passed"'
 
+step "verify per-agreement document ID headers in generated previews and results"
+document_reference=$(rails_runner document_reference.rb)
+echo "$document_reference"
+echo "$document_reference" | grep -q '"document_reference":"passed"'
+
 step "seed the synthetic retainer template, import draft and JUD webhook"
 CI_WEBHOOK_URL=http://jud:8090/webhooks/docuseal CI_WEBHOOK_SECRET=$(setting CI_WEBHOOK_SECRET)
 export CI_WEBHOOK_URL CI_WEBHOOK_SECRET

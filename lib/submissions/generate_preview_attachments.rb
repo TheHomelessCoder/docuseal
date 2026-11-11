@@ -37,6 +37,8 @@ module Submissions
       pdfs_index = GenerateResultAttachments.build_pdfs_index(submission, flatten: is_flatten,
                                                                           incremental: is_rotate_incremental)
 
+      BennettDocumentReference.add_headers(pdfs_index, submission) if with_signature_id
+
       submitters = if submitter
                      submission.submitters.where(id: submitter.id)
                    else
