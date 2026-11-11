@@ -117,6 +117,11 @@ step "verify per-agreement document ID headers in generated previews and results
 document_reference=$(rails_runner document_reference.rb)
 echo "$document_reference"
 echo "$document_reference" | grep -q '"document_reference":"passed"'
+for language in en es; do
+  for kind in preview result; do
+    docker cp "$("${compose[@]}" ps -q docuseal):/tmp/bennett-reference-$language-$kind.pdf" "$SMOKE_DIR/out/"
+  done
+done
 
 step "seed the synthetic retainer template, import draft and JUD webhook"
 CI_WEBHOOK_URL=http://jud:8090/webhooks/docuseal CI_WEBHOOK_SECRET=$(setting CI_WEBHOOK_SECRET)

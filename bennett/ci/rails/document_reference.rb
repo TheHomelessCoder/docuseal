@@ -15,8 +15,10 @@ class BennettReferenceText < HexaPDF::Content::Processor
   end
 
   def show_text(data)
+    origin = graphics_state.ctm.dup.premultiply(*graphics_state.tm).evaluate(0, graphics_state.text_rise)
+    size = graphics_state.font_size
     text = decode_text_with_positioning(data)
-    @items << [text.string, text.lower_left, text.upper_right] unless text.boxes.empty?
+    @items << [text.string, origin, size] unless text.boxes.empty?
   end
   alias show_text_with_positioning show_text
 end
@@ -85,9 +87,11 @@ class BennettReferenceFixture
       check(reader.items.any? { |item| item[0] == "Synthetic unchanged agreement body #{index + 1}" }, 'body retained')
       next unless expected
 
-      text, lower, upper = headers.first
+      text, origin, size = headers.first
       check(text == "DocuSeal Document ID: #{reference}", 'native submission reference')
-      check((lower[0] - 17).abs < 0.01 && lower[1] > page.box.top - 23 && upper[1] < page.box.top - 6,
+      # The Unicode font's global bounding box includes glyphs absent from this
+      # ASCII header. Check its actual text origin/size, then review the PDF ink.
+      check((origin[0] - 17).abs < 0.01 && (origin[1] - (page.box.top - 17)).abs < 0.01 && size == 8,
             'upper-left reserved margin')
     end
     reference
@@ -97,8 +101,10 @@ class BennettReferenceFixture
     references = %w[en es].map do |language|
       submission = build(language)
       preview = Submissions::GeneratePreviewAttachments.call(submission).first
+      File.binwrite("/tmp/bennett-reference-#{language}-preview.pdf", preview.download)
       inspect_pdf(HexaPDF::Document.new(io: StringIO.new(preview.download)), submission)
       pdfs = Submissions::GenerateResultAttachments.generate_pdfs(submission.submitters.first)
+      pdfs.values.first.write("/tmp/bennett-reference-#{language}-result.pdf")
       reference = inspect_pdf(pdfs.values.first, submission)
       check(pdfs.values.first.trailer.info[:DocumentID] == reference, 'native PDF metadata and header agree')
       BennettDocumentReference.add_headers(pdfs, submission)
