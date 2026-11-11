@@ -171,7 +171,9 @@ class ProcessSubmitterCompletionJob
 
     return if to.blank?
 
-    if configs.value['bcc_recipients'] == true
+    # Bennett Legal, 2026-11-10: render a separate signed copy per recipient so
+    # staff can receive JUD context without putting it in the client's email.
+    if configs.value['bcc_recipients'] == true || BennettJudEmailContext.for_submission(submitter.submission)
       to.each { |to| SubmitterMailer.documents_copy_email(submitter, to:).deliver_later! }
     else
       SubmitterMailer.documents_copy_email(submitter, to: to.join(', ')).deliver_later!

@@ -1,0 +1,9 @@
+<% if local_assigns[:context] %>
+  <% es = I18n.locale.to_s.start_with?('es') %>
+  <% is_case = context[:record_type] == 'case' %>
+  <p class="email-text" style="margin:0 0 23px;font:16px/1.75 Arial,Helvetica,sans-serif;color:#263747;">
+    <strong><%= es ? 'Cliente:' : 'Client:' %></strong> <%= context[:client_name] %><br>
+    <strong><%= is_case ? (es ? 'Caso en JUD:' : 'JUD case:') : (es ? 'Prospecto en JUD:' : 'JUD intake lead:') %></strong> <%= context[:reference] %><br>
+    <%= link_to is_case ? (es ? 'Abrir caso en JUD' : 'Open case in JUD') : (es ? 'Abrir prospecto en JUD' : 'Open intake lead in JUD'), context[:url] %>
+  </p>
+<% end %>

@@ -34,7 +34,8 @@ class SubmitterMailer < ApplicationMailer
     maybe_set_custom_domain(@submitter)
 
     I18n.with_locale(bennett_signer_locale(@submitter) || @current_account.locale) do
-      subject = build_invite_subject(@subject, @email_config, submitter)
+      # Bennett Legal, 2026-11-10: also cover native staff-requested invitation resends.
+      subject = build_bennett_invite_subject(submitter)
 
       mail(
         to: @submitter.friendly_name,
@@ -89,6 +90,8 @@ class SubmitterMailer < ApplicationMailer
     @submitter = submitter
     @submission = submitter.submission
     @user = user
+    # Bennett Legal, 2026-11-10: identify the JUD record only for staff recipients.
+    @bennett_jud_context = BennettJudEmailContext.for_recipients(submitter, to || normalize_user_email(user))
 
     template_preferences = @submission.template&.preferences || {}
 
@@ -117,7 +120,7 @@ class SubmitterMailer < ApplicationMailer
 
       mail(from: from_address_for_submitter(submitter),
            to: to || normalize_user_email(user),
-           subject:)
+           subject: BennettJudEmailContext.subject(subject, @bennett_jud_context))
     end
   end
 
@@ -126,22 +129,28 @@ class SubmitterMailer < ApplicationMailer
     @submitter = submitter
     @submission = submitter.submission
     @user = user
+    # Bennett Legal, 2026-11-10: decline notices keep the same internal record context.
+    recipient = user.role == 'integration' ? user.friendly_name.sub(/\+\w+@/, '@') : user.friendly_name
+    @bennett_jud_context = BennettJudEmailContext.for_recipients(submitter, recipient)
 
     assign_message_metadata('submitter_declined', @submitter)
 
     I18n.with_locale(@current_account.locale) do
+      subject = I18n.t(:name_declined_by_submitter,
+                       name: (@submission.name || @submission.template&.name).to_s.truncate(20),
+                       submitter: @submitter.name || @submitter.email || @submitter.phone)
       mail(from: from_address_for_submitter(submitter),
-           to: user.role == 'integration' ? user.friendly_name.sub(/\+\w+@/, '@') : user.friendly_name,
+           to: recipient,
            reply_to: @submitter.friendly_name,
-           subject: I18n.t(:name_declined_by_submitter,
-                           name: (@submission.name || @submission.template&.name).to_s.truncate(20),
-                           submitter: @submitter.name || @submitter.email || @submitter.phone))
+           subject: BennettJudEmailContext.subject(subject, @bennett_jud_context))
     end
   end
 
   def documents_copy_email(submitter, to: nil, sig: false)
     @current_account = submitter.submission.account
     @submitter = submitter
+    # Bennett Legal, 2026-11-10: client and mixed-recipient copies omit internal links.
+    @bennett_jud_context = BennettJudEmailContext.for_recipients(submitter, to || @submitter.friendly_name)
     @sig = submitter.signed_id(expires_in: SIGN_TTL, purpose: :download_completed) if sig
 
     template_preferences = @submitter.template&.preferences || {}
@@ -168,17 +177,12 @@ class SubmitterMailer < ApplicationMailer
     maybe_set_custom_domain(@submitter)
 
     I18n.with_locale(bennett_signer_locale(@submitter) || @current_account.locale) do
-      subject =
-        if @subject.present?
-          ReplaceEmailVariables.call(@subject, submitter:)
-        else
-          I18n.locale.to_s.start_with?('es') ? 'Su contrato firmado de Bennett Legal' : 'Your signed Bennett Legal agreement'
-        end
+      subject = build_documents_copy_subject(@subject, submitter)
 
       mail(from: from_address_for_submitter(submitter),
            to: to || @submitter.friendly_name,
            reply_to:,
-           subject:)
+           subject: BennettJudEmailContext.subject(subject, @bennett_jud_context))
     end
   end
 
@@ -199,7 +203,11 @@ class SubmitterMailer < ApplicationMailer
       end
 
     I18n.with_locale(locale || bennett_signer_locale(submitter) || submitter.account.locale) do
-      subject = I18n.locale.to_s.start_with?('es') ? 'Su código de verificación de Bennett Legal' : 'Your Bennett Legal verification code'
+      subject = if I18n.locale.to_s.start_with?('es')
+                  'Su código de verificación de Bennett Legal'
+                else
+                  'Your Bennett Legal verification code'
+                end
       mail(to: submitter.email, from:, subject:)
     end
   end
@@ -272,7 +280,11 @@ class SubmitterMailer < ApplicationMailer
     if email_config || subject
       ReplaceEmailVariables.call(subject || email_config.value['subject'], submitter:)
     elsif submitter.with_signature_fields? && !submitter.viewer?
-      I18n.locale.to_s.start_with?('es') ? 'Su contrato de Bennett Legal está listo para firmar' : 'Your Bennett Legal retainer is ready to sign'
+      if I18n.locale.to_s.start_with?('es')
+        'Su contrato de Bennett Legal está listo para firmar'
+      else
+        'Your Bennett Legal retainer is ready to sign'
+      end
     elsif submitter.viewer?
       I18n.t(:you_are_invited_to_view_a_document)
     elsif submitter.with_signature_fields?
@@ -280,6 +292,17 @@ class SubmitterMailer < ApplicationMailer
     else
       I18n.t(:you_are_invited_to_submit_a_form)
     end
+  end
+
+  def build_bennett_invite_subject(submitter)
+    @bennett_jud_context = BennettJudEmailContext.for_recipients(submitter, submitter.email)
+    BennettJudEmailContext.subject(build_invite_subject(@subject, @email_config, submitter), @bennett_jud_context)
+  end
+
+  def build_documents_copy_subject(subject, submitter)
+    return ReplaceEmailVariables.call(subject, submitter:) if subject.present?
+
+    I18n.locale.to_s.start_with?('es') ? 'Su contrato firmado de Bennett Legal' : 'Your signed Bennett Legal agreement'
   end
 
   def build_submitter_preferences_index(submitter)

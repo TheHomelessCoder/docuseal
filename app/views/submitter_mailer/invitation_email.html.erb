@@ -16,5 +16,8 @@
   <% if with_code %>
     <%= render 'bennett_paragraph', text: es ? 'Por su seguridad, al abrir el enlace le enviaremos un código de 6 dígitos a este correo.' : 'For your security, when you open the link we will email you a 6-digit code.' %>
   <% end %>
-  <%= render 'bennett_closing' %>
 <% end %>
+<% if @bennett_jud_context && @body.to_s.exclude?(@bennett_jud_context[:url]) %>
+  <%= render 'bennett_jud_context', context: @bennett_jud_context %>
+<% end %>
+<%= render 'bennett_closing' unless @body.present? %>

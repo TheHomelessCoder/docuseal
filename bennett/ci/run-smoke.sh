@@ -108,6 +108,11 @@ mail_assets=$(rails_runner mail_assets.rb)
 echo "$mail_assets"
 echo "$mail_assets" | grep -q '"mail_assets":"passed"'
 
+step "verify staff JUD context and recipient isolation in signing emails (no delivery)"
+jud_email_context=$(rails_runner jud_email_context.rb)
+echo "$jud_email_context"
+echo "$jud_email_context" | grep -q '"jud_email_context":"passed"'
+
 step "seed the synthetic retainer template, import draft and JUD webhook"
 CI_WEBHOOK_URL=http://jud:8090/webhooks/docuseal CI_WEBHOOK_SECRET=$(setting CI_WEBHOOK_SECRET)
 export CI_WEBHOOK_URL CI_WEBHOOK_SECRET

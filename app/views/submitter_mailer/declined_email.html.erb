@@ -1,4 +1,7 @@
 <p><%= t('hi_there') %>,</p>
 <p><%= t('name_declined_by_submitter_with_the_following_reason', name: @submitter.submission.name || @submitter.submission.template&.name, submitter: @submitter.name || @submitter.email || @submitter.phone) %></p>
 <%= simple_format(h(@submitter.submission_events.find_by(event_type: :decline_form).data['reason']), {}, sanitize: false) %>
-<p><%= link_to submission_url(@submitter.submission), submission_url(@submitter.submission) %></p>
+<% if (staff_url = BennettMailerLinks.submission_url(@submitter.submission)) %>
+  <p><%= link_to staff_url, staff_url %></p>
+<% end %>
+<%= render 'bennett_jud_context', context: @bennett_jud_context %>
