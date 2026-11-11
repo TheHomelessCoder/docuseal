@@ -41,6 +41,9 @@ flows.each do |flow|
   client, attorney = submission.template_submitters.map { |role| signers.find { |s| s.uuid == role['uuid'] } }
   check.call(client.completed_at && attorney.completed_at && client.completed_at <= attorney.completed_at, 'signer timestamp order')
   check.call(signers.all? { |s| s.preferences['require_email_2fa'] == false }, 'private-link access persisted')
+  date_field = submission.template_fields.find { |field| field['name'] == 'DateSigned' }
+  check.call(client.values[date_field.fetch('uuid')] == client.completed_at.in_time_zone(submission.account.timezone).to_date.to_s,
+             'actual signing date uses the account timezone')
   check.call(client.preview_documents.size == 1, 'repeated unsigned downloads share one cached preview')
 
   unsigned = client.preview_documents.first.download
@@ -81,6 +84,7 @@ flows.each do |flow|
       end
       check.call(all_text.join(' ').include?(flow.fetch('client_name')), "#{kind} retains the client name")
       check.call(all_text.join(' ').include?('3,000'), "#{kind} retains the fee")
+      check.call(all_text.join(' ').exclude?('{{date}}'), "#{kind} does not expose a date placeholder")
     end
   end
 end
