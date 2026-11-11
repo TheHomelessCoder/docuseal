@@ -152,6 +152,20 @@ if [ "$smoke" -eq 0 ]; then
   unset CI_RETAINER_FLOW_EVIDENCE
   echo "$retainer_flow_evidence"
   echo "$retainer_flow_evidence" | grep -q '"retainer_flow_evidence":"passed"'
+  step "verify all final digital seals independently with Poppler/NSS"
+  mkdir -m 700 "$SMOKE_DIR/nssdb"
+  certutil -N -d "sql:$SMOKE_DIR/nssdb" --empty-password
+  for language in en es; do
+    for device in desktop mobile; do
+      evidence="$SMOKE_DIR/out/private-link-$language-$device-signature.txt"
+      # Trust is checked against the exact CI root by the Rails fixture above;
+      # NSS independently checks the CMS signature and complete byte range.
+      pdfsig -nssdir "$SMOKE_DIR/nssdb" -nocert -no-ocsp \
+        "$SMOKE_DIR/out/private-link-$language-$device-signed.pdf" > "$evidence" 2>&1
+      grep -q 'Signature Validation: Signature is Valid\.' "$evidence"
+      grep -q 'Total document signed' "$evidence"
+    done
+  done
 fi
 
 step "container posture"

@@ -32,7 +32,8 @@ module GenerateCertificate
     cert.not_before = Time.current
     cert.not_after = 100.years.from_now
     cert.public_key = key.public_key
-    cert.serial = OpenSSL::BN.rand(160)
+    # Keep the positive DER INTEGER within RFC 5280's 20-octet limit.
+    cert.serial = OpenSSL::BN.rand(159)
 
     ef = OpenSSL::X509::ExtensionFactory.new
     ef.subject_certificate = cert
@@ -54,7 +55,7 @@ module GenerateCertificate
     cert.not_before = Time.current
     cert.not_after = 100.years.from_now
     cert.public_key = key.public_key
-    cert.serial = OpenSSL::BN.rand(160)
+    cert.serial = OpenSSL::BN.rand(159)
 
     ef = OpenSSL::X509::ExtensionFactory.new
     ef.subject_certificate = cert
@@ -76,7 +77,7 @@ module GenerateCertificate
     cert.not_before = Time.current
     cert.not_after = 100.years.from_now
     cert.public_key = key.public_key
-    cert.serial = OpenSSL::BN.rand(160)
+    cert.serial = OpenSSL::BN.rand(159)
 
     ef = OpenSSL::X509::ExtensionFactory.new
     ef.subject_certificate = cert

@@ -83,6 +83,14 @@ The header requires validated JUD issuance/firm context. Ordinary uploads retain
 
 Unsigned JUD downloads use a cached, prefilled preview so the client receives the same dynamic reference before signing. `ci/jud-retainer-flows.mjs` completes four independent private-link agreements (English/Spanish, desktop/mobile) in fresh browser sessions. It checks recipient order, refused early mutations/downloads, unchecked consent, locked values, no email code, staff case/lead links, recipient isolation, completion and signed webhooks. `ci/rails/retainer_flow_evidence.rb` then reads the exact browser-downloaded unsigned, signed and audit artifacts and requires their native references, content, hashes and timestamps to agree. All identities and documents are synthetic; mail stays in Mailpit.
 
+## PDF signing certificate compatibility
+
+New certificates use 159-bit positive serial numbers so their DER INTEGER encoding stays within [RFC 5280 section 4.1.2.2 and appendix B](https://www.rfc-editor.org/rfc/rfc5280#section-4.1.2.2)'s 20-octet limit. The previous 160-bit generator produced a required leading zero octet, exceeding that limit. A controlled pair of otherwise equivalent PDFs reproduced acceptance of the smaller serial and rejection of the oversized serial in Poppler/NSS, while OpenSSL verified both cryptographic signatures.
+
+Every private-link flow now verifies the actual final seal with OpenSSL against the exact disposable account root, checks all certificate serials and full-file coverage, and independently verifies it with Poppler/NSS. The smoke runner needs `pdfsig` and `certutil` (`poppler-utils` and `libnss3-tools` on Ubuntu).
+
+Updating this image changes future certificate generation; it does not replace an existing account's signing key or certificate chain. Before client rollout, the release owner must inspect the current public signing chain, retain its existing configuration in the normal protected backup, and select a newly generated conforming chain if its serials exceed 159 bits. Accept a fresh EN/ES signed output with both verifiers afterward. Preserve previously completed PDFs and their original audit/certificate evidence.
+
 ## JUD record context in staff email
 
 JUD can attach `metadata.bennett_jud_context` to the firm submitter using the supported API. Version `jud-retainer-email/1` contains `issuance_id`, `record_type` (`case` or `lead`), `reference`, `url` and `client_name`. The native helper requires the matching submission `bennett_issuance_id`, the preserved second signing role/external ID, the exact context keys, and a supported HTTPS URL on `jud.bennettlegal.com`. It adds context only for the firm signer or active staff in the same native account, excluding the Client role even if that address has a native staff account.

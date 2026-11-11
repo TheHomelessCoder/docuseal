@@ -30,6 +30,8 @@ Each change is a normal commit on `bennett-legal`; `git log upstream/master..ben
 
 - **Unsigned JUD downloads and flow acceptance** (2026-11-10). Private-link JUD downloads use a cached generated preview before the first signer completes, retaining the document reference and locked prefills. Disposable English/Spanish desktop/mobile browser flows check both signers, recipient order, email context and completed PDF/audit evidence.
 
+- **Signing certificate serial compatibility** (2026-11-10). Newly generated leaf, intermediate and root certificates use positive serial numbers within the RFC 5280 20-octet DER limit. Acceptance verifies actual completed PDFs using OpenSSL with the pinned CI root and independently using Poppler/NSS. Existing certificate configuration and signed documents are not changed automatically.
+
 ## Source availability
 
 Anyone receiving this image, or using the service over a network, can get the source from the public fork at the commit in the image label. Keep that fork public and keep every published image's commit reachable there (the nightly workflow tags each published commit `verified-<date>-<commit>`).
