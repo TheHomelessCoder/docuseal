@@ -110,3 +110,8 @@ Invitations/resends, completion and decline notices, and lawyer signed copies sh
 Completion/decline administration links and the `{submission.link}` variable use the validated Access staff host when staff access is enabled. Signing and signed-document links keep their public host. An invalid staff configuration omits its administration link without blocking the email.
 
 `ci/rails/jud_email_context.rb` runs in the disposable smoke database and rolls back its synthetic records. It checks actual HTML/plain-text MIME, both languages and record types, custom bodies, early decline, nested API metadata, subject/header safety, recipient grouping and isolation. All mail checks run without delivery. Deploy a verified image through the existing host owner; JUD must also supply the matching metadata. A new full-flow pilot must confirm the actual inbox and JUD links.
+
+
+## Shared printed client names
+
+JUD can supply both client names as one locked FullName value, with the existing one client recipient and signature. For a validated JUD submission, the native renderer reduces the readonly client FullName text size only when needed to fit its existing rectangle. Ordinary names retain their original size; other fields and ordinary uploads keep their previous rendering. Text that cannot fit at the four-point floor fails instead of being cut off. Stored completed PDFs are preserved. The document-reference smoke fixture verifies complete long EN/ES names in both unsigned previews and result generation.

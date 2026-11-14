@@ -40,7 +40,7 @@ class BennettReferenceFixture
     @checks += 1
   end
 
-  def build(language, tagged: true)
+  def build(language, tagged: true, client_name: nil)
     pdf = HexaPDF::Document.new
     2.times do |index|
       canvas = pdf.pages.add([0, 0, 612, 792]).canvas
@@ -56,9 +56,19 @@ class BennettReferenceFixture
                                 submitters: roles, preferences: { 'submitters_order' => 'preserved' })
     documents, = Templates::CreateAttachments.call(template, { files: [upload] })
     template.update!(schema: documents.map { |doc| { attachment_uuid: doc.uuid, name: 'Synthetic reference' } })
+    if client_name
+      attachment = documents.first.uuid
+      template.update!(fields: [{ 'uuid' => SecureRandom.uuid, 'name' => 'FullName', 'type' => 'text',
+                                  'readonly' => true, 'required' => true, 'submitter_uuid' => roles.first['uuid'],
+                                  'preferences' => { 'font_size' => 9, 'valign' => 'center' },
+                                  'areas' => [{ 'attachment_uuid' => attachment, 'page' => 1,
+                                                'x' => 211.0 / 612, 'y' => 328.0 / 792,
+                                                'w' => 300.0 / 612, 'h' => 16.0 / 792 }] }])
+    end
     issuance = SecureRandom.uuid
     submission = Submission.create!(account: @account, template:, created_by_user: @user,
-                                    submitters_order: 'preserved', template_fields: [], template_submitters: roles,
+                                    submitters_order: 'preserved', template_fields: template.fields,
+                                    template_submitters: roles,
                                     template_schema: JSON.parse(template.schema.to_json),
                                     variables: tagged ? { 'bennett_issuance_id' => issuance } : {})
     roles.each_with_index do |role, index|
@@ -69,8 +79,10 @@ class BennettReferenceFixture
                                             'url' => 'https://jud.bennettlegal.com/solar/cases/1',
                                             'client_name' => 'Synthetic Client' }
       end
+      values = index.zero? && client_name ? { template.fields.first.fetch('uuid') => client_name } : {}
       submission.submitters.create!(account: @account, uuid: role['uuid'], name: "Synthetic #{role['name']}",
-                                    email: "#{index}@example.invalid", external_id: "#{issuance}:#{index}", metadata:)
+                                    email: "#{index}@example.invalid", external_id: "#{issuance}:#{index}", metadata:,
+                                    values:)
     end
     submission
   ensure
@@ -98,6 +110,18 @@ class BennettReferenceFixture
   end
 
   def run
+    long_names = 'María Guadalupe Fernández Hernández & José Alejandro González Rodríguez'
+    %w[en es].each do |language|
+      shared = build(language, client_name: long_names)
+      preview = Submissions::GeneratePreviewAttachments.call(shared).first
+      result = Submissions::GenerateResultAttachments.generate_pdfs(shared.submitters.first).values.first
+      [HexaPDF::Document.new(io: StringIO.new(preview.download)), result].each do |pdf|
+        reader = BennettReferenceText.new
+        pdf.pages[1].process_contents(reader)
+        name = reader.items.find { |item| item[0] == long_names }
+        check(name && name[2] < 9 && name[2] >= 4, 'complete shared names fit the fixed field in preview and result')
+      end
+    end
     cached_submission = build('en')
     signer = cached_submission.submitters.first
     first = BennettDocumentReference.preview_attachments(signer).first

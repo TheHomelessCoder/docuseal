@@ -43,3 +43,5 @@ Each change is a normal commit on `bennett-legal`; `git log upstream/master..ben
 Anyone receiving this image, or using the service over a network, can get the source from the public fork at the commit in the image label. Keep that fork public and keep every published image's commit reachable there (the nightly workflow tags each published commit `verified-<date>-<commit>`).
 
 - 2026-11-13: Repair staff submission attributes for Rails HTML validation; read multipart email bodies and current download controls in system tests. Pin native CI runners to Ubuntu 24.04 and apply existing Ruby/ERB style checks to the Bennett layer, retaining standalone Minitest assertions and fixture complexity exemptions.
+
+- 2026-11-13: Fit readonly JUD client FullName text within its existing field rectangle when two printed names are long, preserving the font size for names that already fit and retaining ordinary document rendering.
