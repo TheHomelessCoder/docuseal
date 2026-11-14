@@ -1223,7 +1223,9 @@ RSpec.describe 'Signing Form' do
       click_button 'Send verification code'
 
       email = ActionMailer::Base.deliveries.last
-      one_time_code = email.body.encoded[%r{<b>(\d{6})</b>}, 1]
+      one_time_code = email.text_part.decoded[/\b\d{6}\b/]
+
+      expect(one_time_code).to match(/\A\d{6}\z/)
 
       fill_in 'one_time_code', with: one_time_code
 
@@ -1258,7 +1260,9 @@ RSpec.describe 'Signing Form' do
       find('#resend_label').click
 
       email = ActionMailer::Base.deliveries.last
-      one_time_code = email.body.encoded[%r{<b>(\d{6})</b>}, 1]
+      one_time_code = email.text_part.decoded[/\b\d{6}\b/]
+
+      expect(one_time_code).to match(/\A\d{6}\z/)
 
       fill_in 'one_time_code', with: one_time_code
 

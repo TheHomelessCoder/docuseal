@@ -20,6 +20,8 @@ Metrics/BlockLength:
     - spec/**/*
     - config/environments/**/*
     - config/routes.rb
+    - bennett/ci/rails/**/*
+    - bennett/test/**/*
 
 Style/Documentation:
   Enabled: false
@@ -35,6 +37,8 @@ Metrics/MethodLength:
   Exclude:
     - 'db/migrate/**'
     - 'spec/**/*'
+    - 'bennett/ci/rails/**/*'
+    - 'bennett/test/**/*'
 
 Metrics/CyclomaticComplexity:
   Max: 15
@@ -70,6 +74,7 @@ Metrics/AbcSize:
   Max: 45
   Exclude:
     - spec/**/*
+    - bennett/ci/rails/**/*
 
 Metrics/ModuleLength:
   Max: 1000
@@ -122,3 +127,8 @@ Rails/UnknownEnv:
     - test
     - production
     - local
+
+# These tests use Minitest directly, without Rails assertion aliases.
+Rails/RefuteMethods:
+  Exclude:
+    - bennett/test/**/*

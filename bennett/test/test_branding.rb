@@ -31,11 +31,14 @@ class BrandingTest < Minitest::Test
   end
 
   def test_every_referenced_asset_exists_and_fonts_carry_their_licences
-    referenced = Dir[BennettTest.path('app/views/**/*.erb')].sum([]) { |file| File.read(file).scan(%r{/(?:packs|fonts)/bennett-[A-Za-z0-9._-]+}) }
+    referenced = Dir[BennettTest.path('app/views/**/*.erb')].sum([]) do |file|
+      File.read(file).scan(%r{/(?:packs|fonts)/bennett-[A-Za-z0-9._-]+})
+    end
     referenced += BennettTest.read('public/packs/bennett-signing-v1.css').scan(%r{/fonts/bennett-[A-Za-z0-9._-]+})
     assert_operator referenced.uniq.length, :>=, 8
     referenced.uniq.each { |asset| assert File.file?(BennettTest.path('public', asset)), asset }
-    { 'bennett-jost-latin.woff2' => 'bennett-OFL-Jost.txt', 'bennett-noto-serif-latin.woff2' => 'bennett-OFL-NotoSerif.txt' }.each do |font, licence|
+    { 'bennett-jost-latin.woff2' => 'bennett-OFL-Jost.txt',
+      'bennett-noto-serif-latin.woff2' => 'bennett-OFL-NotoSerif.txt' }.each do |font, licence|
       assert_equal 'wOF2', File.binread(BennettTest.path('public/fonts', font), 4), font
       assert_includes BennettTest.read('public/fonts', licence), 'SIL OPEN FONT LICENSE'
     end
@@ -43,7 +46,8 @@ class BrandingTest < Minitest::Test
 
   def test_build_context_and_git_keep_the_signer_assets
     lines = BennettTest.read('.dockerignore').lines.map(&:strip)
-    exclude, include = lines.index('/public/packs/*'), lines.index('!/public/packs/bennett-*')
+    exclude = lines.index('/public/packs/*')
+    include = lines.index('!/public/packs/bennett-*')
     assert exclude && include && exclude < include, '.dockerignore must keep public/packs/bennett-*'
     refute_includes lines, '/public/packs', '.dockerignore would drop the Bennett signer assets'
     %w[public/packs/bennett-signing-v1.css public/packs/bennett-signing-v1.js].each do |asset|
@@ -60,7 +64,8 @@ class BrandingTest < Minitest::Test
   MAILER = BennettTest.read('app/views/layouts/mailer.html.erb')
   # Partials whose text lands in every Bennett email.
   EMAIL_PARTS = %w[app/views/layouts/mailer.html.erb app/views/shared/_mailer_attribution.html.erb
-                   app/views/submitter_mailer/_bennett_paragraph.html.erb app/views/submitter_mailer/_bennett_button.html.erb
+                   app/views/submitter_mailer/_bennett_paragraph.html.erb
+                   app/views/submitter_mailer/_bennett_button.html.erb
                    app/views/submitter_mailer/_bennett_closing.html.erb].freeze
 
   # Emails use the intake nurture letterhead (bennett-legal-ops services/jud-dashboard/
@@ -72,7 +77,10 @@ class BrandingTest < Minitest::Test
      'class="inset email-header navy-surface" bgcolor="#001a2d"', 'class="inset email-disclosure" bgcolor="#efefed"',
      'class="inset contact-footer navy-surface" bgcolor="#001a2d"', "attachments['bennett-mail-footer-logo.png'].url",
      'tel:+19729724969', 'mailto:solar@bennettlegal.com', "'RETAINER AGREEMENT'", "'CONTRATO DE SERVICIOS LEGALES'",
-     "render partial: 'shared/mailer_attribution'"].each { |needle| assert MAILER.include?(needle), "letterhead lost #{needle}" }
+     "render partial: 'shared/mailer_attribution'"].each do |needle|
+      assert MAILER.include?(needle),
+             "letterhead lost #{needle}"
+    end
     # Outlook recolours navy surfaces unless they carry a background image.
     assert_operator MAILER.scan('background-image:linear-gradient(#001a2d,#001a2d)').length, :>=, 3
     dark = MAILER[/@media \(prefers-color-scheme:dark\)\{(.*?)\}\}/, 1]
@@ -82,8 +90,11 @@ class BrandingTest < Minitest::Test
       assert MAILER.include?("[data-ogsc] .#{name},[data-ogsb] .#{name}{"), "no Outlook rule for .#{name}"
     end
     button = BennettTest.read('app/views/submitter_mailer/_bennett_button.html.erb')
-    %w[cta-surface cta-link border:1px\ solid\ #b18b35 gmail-difference].each { |needle| assert button.include?(needle), "button lost #{needle}" }
-    assert BennettTest.read('app/views/submitter_mailer/otp_verification_email.html.erb').include?('class="email-callout"'),
+    ['cta-surface', 'cta-link', 'border:1px solid #b18b35', 'gmail-difference'].each do |needle|
+      assert button.include?(needle), "button lost #{needle}"
+    end
+    code_template = BennettTest.read('app/views/submitter_mailer/otp_verification_email.html.erb')
+    assert code_template.include?('class="email-callout"'),
            'the code is no longer in the letterhead callout'
   end
 
@@ -95,7 +106,8 @@ class BrandingTest < Minitest::Test
     assert_includes BennettTest.read('lib/html_to_plain_text.rb'), markers.source
     visible = MAILER.gsub(markers, '')
     assert MAILER.include?('<style>'), 'the letterhead has no stylesheet'
-    refute visible.match?(/<style|<title|display:none/), 'the stylesheet, title or hidden preview would reach the plain-text part'
+    refute visible.match?(/<style|<title|display:none/),
+           'the stylesheet, title or hidden preview would reach the plain-text part'
     EMAIL_PARTS.each do |file|
       text = BennettTest.read(file).gsub(markers, '').gsub(/<%.*?%>/m, '').gsub(/<[^>]*>/, ' ')
       refute_match(/\b\d{6}\b/, text, "#{file} prints a six-digit number")

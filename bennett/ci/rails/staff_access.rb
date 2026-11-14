@@ -50,7 +50,6 @@ redirects_to = lambda do |browser, path|
 end
 original_count = User.count
 # The acceptance requests share one rollback transaction; no synthetic data survives.
-# rubocop:disable-next Metrics/BlockLength
 User.transaction do
   user = User.first
   headers = { 'Cf-Access-Jwt-Assertion' => make_token.call(user.email) }
@@ -82,7 +81,6 @@ User.transaction do
   # Small/empty lists used to hide search and offer a document upload instead.
   # Keep fixtures rolled back separately so the authentication checks below
   # retain their original account/user counts.
-  # rubocop:disable-next Metrics/BlockLength
   Submission.transaction(requires_new: true) do
     role = { 'name' => 'Client', 'uuid' => SecureRandom.uuid }
     template.update!(submitters: [role])

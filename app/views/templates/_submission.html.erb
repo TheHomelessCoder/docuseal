@@ -72,7 +72,7 @@
         <% if submitter.completed_at? %>
           <div class="flex-1 min-w-0 md:flex-none">
             <div class="w-full md:w-fit">
-              <download-button <% if bennett_staff? %>role="button" tabindex="0"<% end %> aria-label="<%= t('download') %>" data-src="<%= submission_download_index_path(submission) %>" class="btn btn-sm max-sm:text-[13px] btn-neutral text-white w-full md:w-36">
+              <download-button role="button" tabindex="0" aria-label="<%= t('download') %>" data-src="<%= submission_download_index_path(submission) %>" class="btn btn-sm max-sm:text-[13px] btn-neutral text-white w-full md:w-36">
                 <span class="flex items-center justify-center space-x-1 <%= 'md:space-x-2' if t('download').length < 11 %>" data-target="download-button.defaultButton">
                   <%= svg_icon('download', class: 'w-5 h-5 max-sm:w-4 max-sm:h-4 stroke-2') %>
                   <span class="inline"><%= t('download') %></span>
@@ -163,7 +163,7 @@
                   </span>
                 </span>
                 <% if submitter.completed_at? && !is_submission_completed %>
-                  <download-button <% if bennett_staff? %>role="button" tabindex="0"<% end %> aria-label="<%= t('download') %>" data-src="<%= submitter_download_index_path(submitter) %>" class="btn btn-xs btn-neutral text-white w-12 md:w-36 shrink-0 z-[1]">
+                  <download-button role="button" tabindex="0" aria-label="<%= t('download') %>" data-src="<%= submitter_download_index_path(submitter) %>" class="btn btn-xs btn-neutral text-white w-12 md:w-36 shrink-0 z-[1]">
                     <span class="flex items-center justify-center space-x-1 md:space-x-2" data-target="download-button.defaultButton">
                       <%= svg_icon('download', class: 'w-4 h-4 stroke-2') %>
                       <span class="hidden md:inline"><%= t('download') %></span>
@@ -197,7 +197,7 @@
           <% latest_submitter = submitters.select(&:completed_at?).max_by(&:completed_at) %>
           <div class="flex-1 min-w-0 md:flex-none">
             <div class="w-full md:w-fit">
-              <download-button <% if bennett_staff? %>role="button" tabindex="0"<% end %> aria-label="<%= t('download') %>" data-src="<%= submission_download_index_path(submission) %>" class="btn btn-sm max-sm:text-[13px] btn-neutral text-white w-full md:w-36 z-[1]">
+              <download-button role="button" tabindex="0" aria-label="<%= t('download') %>" data-src="<%= submission_download_index_path(submission) %>" class="btn btn-sm max-sm:text-[13px] btn-neutral text-white w-full md:w-36 z-[1]">
                 <span class="flex items-center justify-center space-x-1 md:space-x-2" data-target="download-button.defaultButton">
                   <%= svg_icon('download', class: 'w-5 h-5 max-sm:w-4 max-sm:h-4 stroke-2') %>
                   <span class="inline"><%= t('download') %></span>

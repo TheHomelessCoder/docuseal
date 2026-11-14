@@ -11,4 +11,4 @@
   <%= render 'bennett_button', url: submissions_preview_url(@submitter.submission.slug, { sig: @sig, host: @custom_domain || ENV.fetch('EMAIL_HOST', Docuseal.default_url_options[:host]) }.compact), label: es ? 'Ver mi copia firmada' : 'View my signed copy' %>
 <% end %>
 <%= render 'bennett_jud_context', context: @bennett_jud_context %>
-<%= render 'bennett_closing' unless @body.present? %>
+<%= render 'bennett_closing' if @body.blank? %>

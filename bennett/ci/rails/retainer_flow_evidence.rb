@@ -39,10 +39,12 @@ flows.each do |flow|
   references << reference
   signers = submission.submitters.to_a
   client, attorney = submission.template_submitters.map { |role| signers.find { |s| s.uuid == role['uuid'] } }
-  check.call(client.completed_at && attorney.completed_at && client.completed_at <= attorney.completed_at, 'signer timestamp order')
+  check.call(client.completed_at && attorney.completed_at && client.completed_at <= attorney.completed_at,
+             'signer timestamp order')
   check.call(signers.all? { |s| s.preferences['require_email_2fa'] == false }, 'private-link access persisted')
   date_field = submission.template_fields.find { |field| field['name'] == 'DateSigned' }
-  check.call(client.values[date_field.fetch('uuid')] == client.completed_at.in_time_zone(submission.account.timezone).to_date.to_s,
+  signed_date = client.completed_at.in_time_zone(submission.account.timezone).to_date.to_s
+  check.call(client.values[date_field.fetch('uuid')] == signed_date,
              'actual signing date uses the account timezone')
   check.call(client.preview_documents.size == 1, 'repeated unsigned downloads share one cached preview')
 
@@ -61,14 +63,16 @@ flows.each do |flow|
       next if kind == :audit
 
       headers = reader.lines.select { |line| line.start_with?('DocuSeal Document ID:') }
-      check.call(headers == ["DocuSeal Document ID: #{reference}"], "#{kind} has exactly one matching header on every page")
+      check.call(headers == ["DocuSeal Document ID: #{reference}"],
+                 "#{kind} has exactly one matching header on every page")
       check.call(reader.lines.any? { |line| line.include?('SYNTHETIC CI RETAINER') }, "#{kind} retains source body")
     end
     if kind == :audit
       check.call(all_text.join(' ').include?(reference), 'audit uses the same native document reference')
     else
       check.call(document.pages.count == 2, "#{kind} retains all pages")
-      check.call(document.trailer.info[BennettDocumentReference::MARKER] == reference, "#{kind} persisted header marker")
+      check.call(document.trailer.info[BennettDocumentReference::MARKER] == reference,
+                 "#{kind} persisted header marker")
       check.call(document.trailer.info[:DocumentID] == reference, 'signed native PDF reference') if kind == :signed
       if kind == :signed
         signatures = document.signatures.to_a

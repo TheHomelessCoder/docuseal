@@ -29,7 +29,7 @@ module BennettDocumentReference
         item['attachment_uuid'] if documents.any? { |document| document.uuid == item['attachment_uuid'] }
       end
       images = documents.select(&:image?)
-      if images.count { |image| expected.include?(image.uuid) } > 1
+      if images.many? { |image| expected.include?(image.uuid) }
         expected << Submissions::GenerateResultAttachments.images_pdf_uuid(images)
       end
 

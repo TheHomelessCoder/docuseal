@@ -5,7 +5,7 @@
 # Optionally write private synthetic previews to RENDER_OUT.
 require 'json'
 
-OUT = ENV['RENDER_OUT']
+OUT = ENV.fetch('RENDER_OUT', nil)
 
 ActiveRecord::Base.transaction do
   # The copy and completed emails would otherwise build the signed documents.
@@ -13,20 +13,22 @@ ActiveRecord::Base.transaction do
     private
 
     def add_completed_email_attachments!(*)
-      attachments['synthetic-document.pdf'] = { mime_type: 'application/pdf', content: '%PDF-1.4 synthetic test attachment' }
+      attachments['synthetic-document.pdf'] =
+        { mime_type: 'application/pdf', content: '%PDF-1.4 synthetic test attachment' }
     end
   end)
 
   account = Account.create!(name: 'Bennett Legal', locale: 'en-US', timezone: 'America/Chicago')
-  user = account.users.create!(email: 'stephen@notify.bennettlegal.com', first_name: 'Stephen', last_name: 'Phillips',
-                               password: SecureRandom.hex(16))
-  fields = [{ 'uuid' => SecureRandom.uuid, 'submitter_uuid' => 'client-role', 'name' => 'Signature', 'type' => 'signature',
-              'required' => true, 'areas' => [] }]
+  user = account.users.create!(email: 'stephen@notify.bennettlegal.com', first_name: 'Stephen',
+                               last_name: 'Phillips', password: SecureRandom.hex(16))
+  fields = [{ 'uuid' => SecureRandom.uuid, 'submitter_uuid' => 'client-role', 'name' => 'Signature',
+              'type' => 'signature', 'required' => true, 'areas' => [] }]
   template = Template.create!(account:, author: user, name: 'Retainer Agreement', fields:,
                               submitters: [{ 'name' => 'Client', 'uuid' => 'client-role' }], source: 'api')
 
   signer = lambda do |name:, lang:, source: 'api', from: template|
-    submission = Submission.create!(account:, template: from, created_by_user: user, source:, submitters_order: 'preserved',
+    submission = Submission.create!(account:, template: from, created_by_user: user, source:,
+                                    submitters_order: 'preserved',
                                     template_fields: from.fields, template_submitters: from.submitters,
                                     template_schema: from.schema, name: from.name)
     Submitter.create!(account:, submission:, uuid: 'client-role', name:, email: 'maria.garcia@example.invalid',
@@ -42,27 +44,37 @@ ActiveRecord::Base.transaction do
     message = Mail.read_from_string(message.to_s)
     html = message.html_part.body.decoded.force_encoding('UTF-8')
     text = message.text_part.body.decoded.force_encoding('UTF-8')
-    expected = %w[footer-logo linkedin-gold instagram-gold facebook-gold youtube-gold].map { |asset| "bennett-mail-#{asset}.png" }
+    expected = %w[footer-logo linkedin-gold instagram-gold facebook-gold youtube-gold].map do |asset|
+      "bennett-mail-#{asset}.png"
+    end
     inlines = message.attachments.select(&:inline?)
     raise "#{name}: missing or duplicate inline artwork" unless inlines.map(&:filename).sort == expected.sort
+
     inlines.each do |part|
       raise "#{name}: wrong MIME type" unless part.mime_type == 'image/png'
-      raise "#{name}: changed artwork" unless part.body.decoded == File.binread(Rails.root.join('public', 'packs', part.filename))
+
+      artwork = Rails.public_path.join('packs', part.filename).binread
+      raise "#{name}: changed artwork" unless part.body.decoded == artwork
     end
     images = Nokogiri::HTML.fragment(html).css('img')
     raise "#{name}: missing header/footer images" unless images.length == 6
+
     images.each do |image|
       source = image['src']
       raise "#{name}: remote artwork dependency" unless source.start_with?('cid:')
+
       matches = inlines.select { |part| part.cid == CGI.unescape(source.delete_prefix('cid:')) }
       raise "#{name}: unresolved image" unless matches.length == 1
+
       image['src'] = "data:image/png;base64,#{Base64.strict_encode64(matches.first.body.decoded)}"
     end
     if name.start_with?('copy-') || name == 'completed-staff'
-      raise "#{name}: document lost" unless message.attachments['synthetic-document.pdf']&.body&.decoded == '%PDF-1.4 synthetic test attachment'
+      document = message.attachments['synthetic-document.pdf']&.body&.decoded
+      raise "#{name}: document lost" unless document == '%PDF-1.4 synthetic test attachment'
     end
     raise "#{name}: no plain text" if text.strip.empty?
     raise "#{name}: MIME/CSS leaked into text" if text.match?(/cid:|<style|email-paper\{/)
+
     if OUT
       # A local visual preview resolves only bytes actually present in the MIME.
       resolved = Nokogiri::HTML.fragment(html)
@@ -88,10 +100,11 @@ ActiveRecord::Base.transaction do
   # A custom body (account or template setting) with the signing link appended.
   custom = Template.create!(account:, author: user, name: 'Retainer Agreement', fields:, source: 'api',
                             submitters: [{ 'name' => 'Client', 'uuid' => 'client-role' }],
-                            preferences: { 'request_email_body' => "Hello {submitter.name},\n\nPlease review and sign your " \
-                                                                   "agreement.\n\nThank you,\nBennett Legal" })
-  render.call('invitation-custom-body-en', SubmitterMailer.invitation_email(signer.call(name: 'Maria Garcia', lang: 'en',
-                                                                                         source: 'invite', from: custom)))
+                            preferences: { 'request_email_body' => "Hello {submitter.name},\n\n" \
+                                                                   "Please review and sign your agreement.\n\n" \
+                                                                   "Thank you,\nBennett Legal" })
+  custom_signer = signer.call(name: 'Maria Garcia', lang: 'en', source: 'invite', from: custom)
+  render.call('invitation-custom-body-en', SubmitterMailer.invitation_email(custom_signer))
 
   # Staff and account mail.
   en.update!(completed_at: Time.current)
@@ -107,6 +120,7 @@ ActiveRecord::Base.transaction do
 
   File.write(File.join(OUT, 'index.json'), "#{JSON.pretty_generate(results)}\n") if OUT
   raise "Email MIME check failed: #{results.reject { |r| r[:ok] }.to_json}" unless results.all? { |r| r[:ok] }
+
   puts({ mail_assets: 'passed', messages: results.length, delivered: false }.to_json)
   raise ActiveRecord::Rollback
 end

@@ -52,7 +52,7 @@ class ApplicationMailer < ActionMailer::Base
       filename = "bennett-mail-#{name}.png"
       attachments.inline[filename] = {
         mime_type: 'image/png',
-        content: File.binread(Rails.root.join('public', 'packs', filename))
+        content: Rails.public_path.join('packs', filename).binread
       }
     end
   end

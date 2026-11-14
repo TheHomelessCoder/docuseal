@@ -41,3 +41,5 @@ Each change is a normal commit on `bennett-legal`; `git log upstream/master..ben
 ## Source availability
 
 Anyone receiving this image, or using the service over a network, can get the source from the public fork at the commit in the image label. Keep that fork public and keep every published image's commit reachable there (the nightly workflow tags each published commit `verified-<date>-<commit>`).
+
+- 2026-11-13: Repair staff submission attributes for Rails HTML validation; read multipart email bodies and current download controls in system tests. Pin native CI runners to Ubuntu 24.04 and apply existing Ruby/ERB style checks to the Bennett layer, retaining standalone Minitest assertions and fixture complexity exemptions.
