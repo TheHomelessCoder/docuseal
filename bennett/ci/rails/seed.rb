@@ -15,7 +15,8 @@ account.account_configs.find_or_initialize_by(key: AccountConfig::WITH_SIGNATURE
 pdf = HexaPDF::Document.new
 2.times do |index|
   canvas = pdf.pages.add.canvas
-  canvas.font('Helvetica', size: 18).text("SYNTHETIC CI RETAINER - NOT A CONTRACT (page #{index + 1} of 2)", at: [72, 720])
+  canvas.font('Helvetica', size: 18).text("SYNTHETIC CI RETAINER - NOT A CONTRACT (page #{index + 1} of 2)",
+                                          at: [72, 720])
   canvas.font('Helvetica', size: 11).text('Nightly build check for the Bennett Legal signing service.', at: [72, 690])
 end
 io = StringIO.new
@@ -28,7 +29,9 @@ upload = lambda do |name|
   file.rewind
   ActionDispatch::Http::UploadedFile.new(tempfile: file, filename: "#{name}.pdf", type: 'application/pdf')
 end
-roles = -> { [{ 'name' => 'Client', 'uuid' => SecureRandom.uuid }, { 'name' => 'Attorney', 'uuid' => SecureRandom.uuid }] }
+roles = lambda {
+  [{ 'name' => 'Client', 'uuid' => SecureRandom.uuid }, { 'name' => 'Attorney', 'uuid' => SecureRandom.uuid }]
+}
 create = lambda do |name, external_id|
   template = Template.create!(account:, author: user, name:, external_id:, submitters: roles.call,
                               preferences: { 'submitters_order' => 'preserved' })
@@ -39,7 +42,9 @@ end
 
 template, document = create.call('CI retainer (synthetic)', 'ci-retainer')
 client, attorney = template.submitters.pluck('uuid')
-area = ->(page, x, y, w = 0.3, h = 0.04) { { 'attachment_uuid' => document.uuid, 'page' => page, 'x' => x, 'y' => y, 'w' => w, 'h' => h } }
+area = lambda { |page, x, y, w = 0.3, h = 0.04|
+  { 'attachment_uuid' => document.uuid, 'page' => page, 'x' => x, 'y' => y, 'w' => w, 'h' => h }
+}
 field = lambda do |role, name, type, place|
   { 'uuid' => SecureRandom.uuid, 'submitter_uuid' => role, 'name' => name, 'type' => type, 'required' => true,
     'preferences' => {}, 'areas' => [place] }

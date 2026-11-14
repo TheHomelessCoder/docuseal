@@ -50,7 +50,7 @@ class BennettReferenceFixture
     pdf.write(file)
     file.rewind
     upload = ActionDispatch::Http::UploadedFile.new(tempfile: file, filename: 'synthetic-reference.pdf',
-                                                  type: 'application/pdf')
+                                                    type: 'application/pdf')
     roles = [{ 'name' => 'Client', 'uuid' => SecureRandom.uuid }, { 'name' => 'Attorney', 'uuid' => SecureRandom.uuid }]
     template = Template.create!(account: @account, author: @user, name: 'Synthetic reference', fields: [],
                                 submitters: roles, preferences: { 'submitters_order' => 'preserved' })
@@ -65,9 +65,9 @@ class BennettReferenceFixture
       metadata = { 'lang' => language }
       if index == 1
         metadata['bennett_jud_context'] = { 'version' => 'jud-retainer-email/1', 'issuance_id' => issuance,
-                                          'record_type' => 'case', 'reference' => 'SOLAR-2099-00001',
-                                          'url' => 'https://jud.bennettlegal.com/solar/cases/1',
-                                          'client_name' => 'Synthetic Client' }
+                                            'record_type' => 'case', 'reference' => 'SOLAR-2099-00001',
+                                            'url' => 'https://jud.bennettlegal.com/solar/cases/1',
+                                            'client_name' => 'Synthetic Client' }
       end
       submission.submitters.create!(account: @account, uuid: role['uuid'], name: "Synthetic #{role['name']}",
                                     email: "#{index}@example.invalid", external_id: "#{issuance}:#{index}", metadata:)
@@ -108,12 +108,14 @@ class BennettReferenceFixture
                                       metadata: first.metadata.deep_dup)
     check(signer.preview_documents.reload.size == 2, 'duplicate-cache negative control is present')
     repaired = BennettDocumentReference.preview_attachments(signer)
-    check(repaired.size == 1 && signer.preview_documents.reload.size == 1, 'duplicate cache is replaced with one source preview')
+    check(repaired.size == 1 && signer.preview_documents.reload.size == 1,
+          'duplicate cache is replaced with one source preview')
     check(repaired.first.metadata['original_uuid'] == source_uuid && repaired.first.blob_id != original_blob,
           'duplicate repair regenerates the expected source')
     repaired.first.update!(metadata: repaired.first.metadata.merge('original_uuid' => 'foreign-source'))
     corrected = BennettDocumentReference.preview_attachments(signer)
-    check(corrected.size == 1 && corrected.first.metadata['original_uuid'] == source_uuid, 'same-size foreign cache is replaced')
+    check(corrected.size == 1 && corrected.first.metadata['original_uuid'] == source_uuid,
+          'same-size foreign cache is replaced')
     inspect_pdf(HexaPDF::Document.new(io: StringIO.new(corrected.first.download)), cached_submission)
 
     references = %w[en es].map do |language|

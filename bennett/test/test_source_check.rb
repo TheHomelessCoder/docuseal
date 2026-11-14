@@ -37,7 +37,6 @@ class SourceCheckTest < Minitest::Test
       original = File.read(File.join(@root, file))
       BennettTest.edit(@root, file) { |text| text.gsub(/,\s*with_order: true/, '') }
       # Plain Minitest does not load ActiveSupport's assertion aliases.
-      # rubocop:disable-next Rails/RefuteMethods
       refute_equal original, File.read(File.join(@root, file)), file
       refused(/with_order|recipient-order/)
       File.write(File.join(@root, file), original)

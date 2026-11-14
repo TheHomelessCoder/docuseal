@@ -5,7 +5,7 @@ on: [push]
 jobs:
   rubocop:
     name: Rubocop
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -30,7 +30,7 @@ jobs:
 
   erblint:
     name: Erblint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -55,7 +55,7 @@ jobs:
 
   eslint:
     name: ESLint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -82,7 +82,7 @@ jobs:
 
   brakeman:
     name: Brakeman
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -110,7 +110,7 @@ jobs:
 
   rspec:
     name: RSpec
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     container:
       image: ruby:4.0.9-alpine

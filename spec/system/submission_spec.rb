@@ -17,7 +17,7 @@ RSpec.describe 'Submission' do
   it 'unarchives a completed submission from the download dropdown' do
     visit submission_path(submission)
 
-    find('label[aria-label="Download"]').click
+    find('button[aria-label="Download"]').click
     click_button 'Unarchive'
 
     expect(page).to have_content('Submission has been unarchived.')

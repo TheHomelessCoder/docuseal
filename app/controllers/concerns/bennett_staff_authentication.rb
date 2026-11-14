@@ -32,6 +32,7 @@ module BennettStaffAuthentication
     email = Bennett::StaffAccess.verifier.email(request.headers['Cf-Access-Jwt-Assertion'])
     @bennett_staff_user = User.find_by(email:) if email
     return redirect_staff_viewer if email && !@bennett_staff_user
+
     unless @bennett_staff_user&.active_for_authentication?
       sign_out
       reset_session

@@ -85,9 +85,9 @@ RSpec.describe 'Profile Settings' do
       expect(page).to have_content('An email with password reset instructions has been sent.')
 
       email = ActionMailer::Base.deliveries.last
-      reset_password_url = email.body
-                                .encoded[/href="([^"]+)"/, 1]
-                                .sub(%r{https?://(.*?)/}, "#{Capybara.current_session.server.base_url}/")
+      reset_password_url = Nokogiri::HTML(email.html_part.decoded)
+                                  .at_css('a[href*="reset_password_token="]')['href']
+                                  .sub(%r{https?://(.*?)/}, "#{Capybara.current_session.server.base_url}/")
 
       visit reset_password_url
 

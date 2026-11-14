@@ -30,24 +30,31 @@ unless ENV['LOCAL_REHEARSAL'] == 'true'
     # libpq query keywords can override the URI's authority. Also reject the
     # upstream DATABASE_HOST branch, which takes precedence over DATABASE_URL.
     raise 'ambiguous database configuration' unless pairs.length == query.length &&
-      (query.keys - %w[sslmode sslrootcert connect_timeout]).empty? &&
-      %w[DATABASE_HOST DATABASE_PORT DATABASE_USER DATABASE_PASSWORD DATABASE_NAME].none? { |key| !ENV[key].to_s.empty? }
+                                                    (query.keys - %w[sslmode sslrootcert connect_timeout]).empty? &&
+                                                    %w[DATABASE_HOST DATABASE_PORT DATABASE_USER DATABASE_PASSWORD
+                                                       DATABASE_NAME].none? do |key|
+                                                      !ENV[key].to_s.empty?
+                                                    end
     raise 'invalid database endpoint' unless url.scheme == 'postgresql' &&
-      url.host == ENV.fetch('EXPECTED_DATABASE_HOST') &&
-      !url.user.to_s.empty? && url.path == '/docuseal' &&
-      (url.port.nil? || url.port == 5432) && url.fragment.nil?
+                                             url.host == ENV.fetch('EXPECTED_DATABASE_HOST') &&
+                                             !url.user.to_s.empty? && url.path == '/docuseal' &&
+                                             (url.port.nil? || url.port == 5432) && url.fragment.nil?
+
     if ENV['DOCUSEAL_DATABASE_MODE'] == 'host-container'
       # Co-hosted: PostgreSQL is a sibling container on an internal-only Docker
       # network, so traffic never leaves the machine. Accept only a single-label
       # service name (never a DNS name that could resolve off-host) and an
       # explicit sslmode=disable.
       raise 'invalid container database' unless url.host.match?(CONTAINER_NAME) &&
-        query['sslmode'] == 'disable' && !query.key?('sslrootcert')
+                                                query['sslmode'] == 'disable' && !query.key?('sslrootcert')
     else
       raise 'invalid database TLS' unless query['sslmode'] == 'verify-full' &&
-        query['sslrootcert'] == '/etc/docuseal/rds-global-bundle.pem'
+                                          query['sslrootcert'] == '/etc/docuseal/rds-global-bundle.pem'
     end
-    raise 'invalid database timeout' if query.key?('connect_timeout') && !query['connect_timeout'].match?(/\A(?:[1-9]|1[0-5])\z/)
+    if query.key?('connect_timeout') && !query['connect_timeout'].match?(/\A(?:[1-9]|1[0-5])\z/)
+      raise 'invalid database timeout'
+    end
+
     ENV['PGCONNECT_TIMEOUT'] = '5'
     raise 'missing stable encryption key' if ENV.fetch('ENCRYPTION_SECRET').length < 64
     raise 'missing stable session key' if ENV.fetch('SECRET_KEY_BASE').length < 64
@@ -74,11 +81,17 @@ end
 # Suppress all raw output; container health, the gateway and JUD job receipts diagnose health.
 emit('starting')
 Open3.popen2e('/app/bin/bundle', 'exec', 'puma', '-C', '/opt/docuseal/puma.rb',
-             '--dir', '/app') do |stdin, output, process|
+              '--dir', '/app') do |stdin, output, process|
   stdin.close
-  %w[TERM INT].each { |signal| Signal.trap(signal) { Process.kill(signal, process.pid) rescue nil } }
+  %w[TERM INT].each do |signal|
+    Signal.trap(signal) do
+      Process.kill(signal, process.pid)
+    rescue StandardError
+      nil
+    end
+  end
   output.each_line { |_line| nil }
   result = process.value
-  emit('exited', result.exitstatus || 128 + result.termsig)
-  exit(result.exitstatus || 128 + result.termsig)
+  emit('exited', result.exitstatus || (128 + result.termsig))
+  exit(result.exitstatus || (128 + result.termsig))
 end

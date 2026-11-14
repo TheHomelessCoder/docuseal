@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 # Puma's `load` queues config files rather than evaluating them immediately.
 # Evaluate upstream in the same DSL context before replacing its listening bind,
 # so its security initialization and background-job plugins actually run.

@@ -24,9 +24,9 @@ ActiveRecord::Base.transaction do
                            email: values.fetch('email'), password: values.fetch('password'), role: User::ADMIN_ROLE)
   user.save!
   account.encrypted_configs.create!([
-    { key: EncryptedConfig::APP_URL_KEY, value: values.fetch('app_url') },
-    { key: EncryptedConfig::ESIGN_CERTS_KEY, value: GenerateCertificate.call.transform_values(&:to_pem) }
-  ])
+                                      { key: EncryptedConfig::APP_URL_KEY, value: values.fetch('app_url') },
+                                      { key: EncryptedConfig::ESIGN_CERTS_KEY, value: GenerateCertificate.call.transform_values(&:to_pem) }
+                                    ])
   account.account_configs.create!(key: :fulltext_search, value: true) if SearchEntry.table_exists?
   user.access_tokens.create!(token:)
 end

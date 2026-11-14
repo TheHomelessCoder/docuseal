@@ -11,18 +11,20 @@ class SubmitFormDownloadController < ApplicationController
 
     return redirect_to submit_form_documents_path(@submitter.slug) if @submitter.completed_at?
 
+    submission = @submitter.submission
+
     return head :unprocessable_content if @submitter.declined_at? ||
-                                          @submitter.submission.archived_at? ||
-                                          @submitter.submission.expired? ||
-                                          @submitter.submission.completed_at? ||
-                                          @submitter.submission.template&.archived_at? ||
+                                          submission.archived_at? ||
+                                          submission.expired? ||
+                                          submission.completed_at? ||
+                                          submission.template&.archived_at? ||
                                           AccountConfig.exists?(account_id: @submitter.account_id,
                                                                 key: AccountConfig::ALLOW_TO_PARTIAL_DOWNLOAD_KEY,
                                                                 value: false) ||
                                           !Submitters::AuthorizedForForm.call(@submitter, current_user, request,
                                                                               with_order: true)
 
-    last_completed_submitter = @submitter.submission.submitters
+    last_completed_submitter = submission.submitters
                                          .where.not(id: @submitter.id)
                                          .where.not(completed_at: nil)
                                          .max_by(&:completed_at)
@@ -30,10 +32,10 @@ class SubmitFormDownloadController < ApplicationController
     attachments =
       if last_completed_submitter
         Submitters.select_attachments_for_download(last_completed_submitter)
-      elsif BennettDocumentReference.enabled_for?(@submitter.submission)
+      elsif BennettDocumentReference.enabled_for?(submission)
         BennettDocumentReference.preview_attachments(@submitter)
       else
-        @submitter.submission.schema_documents.preload(:blob)
+        submission.schema_documents.preload(:blob)
       end
 
     urls = attachments.map do |attachment|
