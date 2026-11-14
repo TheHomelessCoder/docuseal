@@ -121,7 +121,172 @@ describe 'Bennett atomic signing and unsigned expiry' do
     end
   end
 
+  it 'dispatches public completion, webhook bulk and reindex bulk work with committed signing state' do
+    observations = observe_completion_dispatch
+    webhook = Struct.new(:id, :events).new(123, ['form.started'])
+    allow(WebhookUrls).to receive(:for_account_id).with(account.id, 'form.started').and_return([webhook])
+    bulk_webhooks = []
+    bulk_reindexes = []
+    allow(Sidekiq::Client).to receive(:push_bulk) do |payload|
+      bulk_webhooks << [payload, worker_state(submitter.id)]
+      []
+    end
+    allow(ReindexSearchEntryJob).to receive(:perform_bulk) do |args|
+      bulk_reindexes << [args, worker_state(submitter.id)]
+      []
+    end
+
+    session = ActionDispatch::Integration::Session.new(Rails.application)
+    sign(session)
+
+    expect(session.response).to have_http_status(:ok)
+    expect(observations.first[:args]).to eq('submitter_id' => submitter.id, 'is_last' => true)
+    expect(bulk_webhooks.first.first['class']).to eq(SendFormStartedWebhookRequestJob)
+    expect(bulk_webhooks.first.first['args'].first.first).to include('submitter_id' => submitter.id,
+                                                                     'webhook_url_id' => webhook.id,
+                                                                     'event_uuid' => a_kind_of(String))
+    expect(bulk_reindexes.first.first).to eq([[{ 'record_type' => 'Submitter', 'record_id' => submitter.id }]])
+    states = [observations.first[:state], bulk_webhooks.first.last, bulk_reindexes.first.last]
+    states.each do |state|
+      expect(state[:completed_at]).to be_present
+      expect(state[:submission_completed_at]).to be_present
+      expect(state[:values].values).to include('synthetic-signature-uuid')
+    end
+  end
+
+  it 'dispatches API completion only after the updated signer commits' do
+    observations = observe_completion_dispatch
+    session = ActionDispatch::Integration::Session.new(Rails.application)
+
+    session.put "/api/submitters/#{submitter.id}", headers: api_headers,
+                                                   params: { completed: true, name: 'Committed API signer' }.to_json
+
+    expect(session.response).to have_http_status(:ok)
+    expect(observations.first[:args]).to eq('submitter_id' => submitter.id, 'is_last' => true)
+    expect(observations.first[:state][:completed_at]).to be_present
+    expect(observations.first[:state][:submission_completed_at]).to be_present
+    expect(observations.first[:state][:name]).to eq('Committed API signer')
+  end
+
+  it 'dispatches API invitations only after the new recipient commits' do
+    observations = observe_invitation_dispatch
+    session = ActionDispatch::Integration::Session.new(Rails.application)
+    attrs = { email: 'api-recipient@example.invalid', send_email: true }
+
+    session.put "/api/submitters/#{submitter.id}", headers: api_headers, params: attrs.to_json
+
+    expect(session.response).to have_http_status(:ok)
+    expect(observations.first[:args]).to eq('submitter_id' => submitter.id)
+    expect(observations.first[:state][:email]).to eq('api-recipient@example.invalid')
+  end
+
+  it 'dispatches delegated invitations with the committed replacement email and slug' do
+    observations = observe_invitation_dispatch
+    account.account_configs.create!(key: AccountConfig::ALLOW_TO_DELEGATE_KEY, value: true)
+    old_slug = submitter.slug
+    session = ActionDispatch::Integration::Session.new(Rails.application)
+
+    session.post "/s/#{old_slug}/delegate", params: { email: 'delegated@example.invalid' }
+
+    expect(session.response).to have_http_status(:found)
+    expect(observations.first[:args]).to eq('submitter_id' => submitter.id)
+    expect(observations.first[:state][:email]).to eq('delegated@example.invalid')
+    expect(observations.first[:state][:slug]).not_to eq(old_slug)
+    expect(submitter.reload.slug).to eq(observations.first[:state][:slug])
+    expect(submitter.submitter_versions.pluck(:slug)).to eq([old_slug])
+  end
+
+  it 'dispatches decline mail and webhook bulk work only after decline commits' do
+    allow(Users).to receive(:send_emails?).and_return(true)
+    observations = []
+    mail = instance_double(ActionMailer::MessageDelivery)
+    allow(SubmitterMailer).to receive(:declined_email).and_return(mail)
+    allow(mail).to receive(:deliver_later!) { observations << worker_state(submitter.id) }
+    webhook = Struct.new(:id, :events).new(123, ['form.declined'])
+    allow(WebhookUrls).to receive(:for_account_id).with(account.id, 'form.declined').and_return([webhook])
+    allow(Sidekiq::Client).to receive(:push_bulk) do |_payload|
+      observations << worker_state(submitter.id)
+      []
+    end
+    session = ActionDispatch::Integration::Session.new(Rails.application)
+
+    session.post "/s/#{submitter.slug}/decline", params: { reason: 'Synthetic decline' }
+
+    expect(session.response).to have_http_status(:found)
+    expect(observations.size).to eq(2)
+    expect(observations.pluck(:declined_at)).to all(be_present)
+  end
+
+  %i[completion api_completion delegate decline].each do |mutation|
+    it "drops #{mutation} dispatch if an enclosing transaction rolls back" do
+      account.account_configs.create!(key: AccountConfig::ALLOW_TO_DELEGATE_KEY, value: true)
+      allow(Users).to receive(:send_emails?).and_return(false)
+      allow(ProcessSubmitterCompletionJob).to receive(:perform_async)
+      allow(SendSubmitterInvitationEmailJob).to receive(:perform_async)
+      allow(WebhookUrls).to receive(:enqueue_events).and_call_original
+      allow(SearchEntries).to receive(:enqueue_reindex).and_call_original
+      original_email = submitter.email
+      original_slug = submitter.slug
+
+      ApplicationRecord.transaction do
+        session = ActionDispatch::Integration::Session.new(Rails.application)
+        case mutation
+        when :api_completion
+          session.put "/api/submitters/#{submitter.id}", headers: api_headers, params: { completed: true }.to_json
+        when :delegate
+          session.post "/s/#{original_slug}/delegate", params: { email: 'rollback@example.invalid' }
+        when :decline
+          session.post "/s/#{original_slug}/decline", params: { reason: 'Rolled back' }
+        else
+          sign(session)
+        end
+        expect(session.response.status).to eq(mutation.in?(%i[delegate decline]) ? 302 : 200)
+        expect(ProcessSubmitterCompletionJob).not_to have_received(:perform_async)
+        expect(SendSubmitterInvitationEmailJob).not_to have_received(:perform_async)
+        expect(WebhookUrls).not_to have_received(:enqueue_events)
+        expect(SearchEntries).not_to have_received(:enqueue_reindex)
+        raise ActiveRecord::Rollback
+      end
+
+      expect(ProcessSubmitterCompletionJob).not_to have_received(:perform_async)
+      expect(SendSubmitterInvitationEmailJob).not_to have_received(:perform_async)
+      expect(WebhookUrls).not_to have_received(:enqueue_events)
+      expect(SearchEntries).not_to have_received(:enqueue_reindex)
+      expect(submitter.reload.completed_at).to be_nil
+      expect(submitter.declined_at).to be_nil
+      expect(submitter.email).to eq(original_email)
+      expect(submitter.slug).to eq(original_slug)
+      expect(submitter.submission_events).not_to exist
+    end
+  end
+
   private
+
+  def observe_completion_dispatch
+    observations = []
+    allow(ProcessSubmitterCompletionJob).to receive(:perform_async) do |args|
+      observations << { args:, state: worker_state(args.fetch('submitter_id')) }
+    end
+    observations
+  end
+
+  def observe_invitation_dispatch
+    observations = []
+    allow(SendSubmitterInvitationEmailJob).to receive(:perform_async) do |args|
+      observations << { args:, state: worker_state(args.fetch('submitter_id')) }
+    end
+    observations
+  end
+
+  def worker_state(submitter_id)
+    Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        signer = Submitter.find(submitter_id)
+        signer.attributes.symbolize_keys.slice(:completed_at, :declined_at, :values, :name, :email, :slug)
+              .merge(submission_completed_at: signer.submission.completed_at)
+      end
+    end.value
+  end
 
   def api_headers
     { 'x-auth-token' => token, 'content-type' => 'application/json' }

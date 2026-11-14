@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 # Modified by Bennett Legal on 2026-11-13: serialize recipient value changes with API expiry.
+# Modified by Bennett Legal on 2026-11-13: defer delegated invitations until the new recipient commits.
 
 class SubmitFormDelegateController < ApplicationController
   include BennettSubmissionLock
@@ -42,12 +43,18 @@ class SubmitFormDelegateController < ApplicationController
                          values: Submitters.fetch_values_for_delegate(@submitter))
     end
 
-    SendSubmitterInvitationEmailJob.perform_async('submitter_id' => @submitter.id)
+    enqueue_delegated_invitation
 
     redirect_to submit_form_delegated_path(old_slug)
   end
 
   private
+
+  def enqueue_delegated_invitation
+    ActiveRecord.after_all_transactions_commit do
+      SendSubmitterInvitationEmailJob.perform_async('submitter_id' => @submitter.id)
+    end
+  end
 
   def load_submitter
     @submitter = Submitter.find_by!(slug: params[:submit_form_slug])

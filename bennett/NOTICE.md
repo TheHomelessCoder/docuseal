@@ -36,6 +36,8 @@ Each change is a normal commit on `bennett-legal`; `git log upstream/master..ben
 
 - **Atomic signing and unsigned expiry** (2026-11-13). Public signer value, signature attachment, invitation completion, delegation and decline writes, plus API submitter updates, share the submission row lock with API submission updates. Lifecycle and recipient-order checks read fresh records while holding that lock through commit. API submission updates accept `bennett_unsigned_only: true` and refuse with HTTP 409 / `BENNETT_UNSIGNED_EXPIRY_REFUSED` if any recipient has completed or declined; ordinary expiry remains available and serialized. Submission API responses advertise `bennett_atomic_signing_expiry: true`. Existing authentication, attribution and licence terms remain in place.
 
+- **Signer dispatch after commit** (2026-11-13). Completion jobs, delegated/API invitations, decline mail, and signer webhook/reindex dispatch wait for all enclosing database transactions to commit. Rolled-back actions publish no such work, including helper dispatch using Sidekiq bulk APIs. Native job arguments and delivery preferences are retained.
+
 ## Source availability
 
 Anyone receiving this image, or using the service over a network, can get the source from the public fork at the commit in the image label. Keep that fork public and keep every published image's commit reachable there (the nightly workflow tags each published commit `verified-<date>-<commit>`).

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Modified by Bennett Legal on 2026-11-13: dispatch signer jobs only after the signing transaction commits.
+
 module Submitters
   module SubmitValues
     ValidationError = Class.new(StandardError)
@@ -28,7 +30,9 @@ module Submitters
       unless submitter.submission_events.exists?(event_type: 'start_form')
         SubmissionEvents.create_with_tracking_data(submitter, 'start_form', request)
 
-        WebhookUrls.enqueue_events(submitter, 'form.started')
+        ActiveRecord.after_all_transactions_commit do
+          WebhookUrls.enqueue_events(submitter, 'form.started')
+        end
       end
 
       update_submitter!(submitter, params, request, validate_required:)
@@ -38,7 +42,9 @@ module Submitters
       if submitter.completed_at?
         is_last = Submissions.maybe_update_completed_at(submitter.submission)
 
-        ProcessSubmitterCompletionJob.perform_async('submitter_id' => submitter.id, 'is_last' => is_last)
+        ActiveRecord.after_all_transactions_commit do
+          ProcessSubmitterCompletionJob.perform_async('submitter_id' => submitter.id, 'is_last' => is_last)
+        end
       end
 
       submitter
@@ -66,7 +72,7 @@ module Submitters
         submitter.save!
       end
 
-      SearchEntries.enqueue_reindex(submitter) if submitter.completed_at?
+      ActiveRecord.after_all_transactions_commit { SearchEntries.enqueue_reindex(submitter) } if submitter.completed_at?
 
       submitter
     end

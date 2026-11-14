@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 # Modified by Bennett Legal on 2026-11-13: serialize API signing with expiry and recheck lifecycle/order.
+# Modified by Bennett Legal on 2026-11-13: defer completion, invitation and reindex dispatch until commit.
 
 module Api
   class SubmittersController < ApiBaseController
@@ -71,15 +72,17 @@ module Api
         end
       end
 
-      if @submitter.completed_at?
-        is_last = Submissions.maybe_update_completed_at(@submitter.submission)
+      is_last = Submissions.maybe_update_completed_at(@submitter.submission) if @submitter.completed_at?
 
-        ProcessSubmitterCompletionJob.perform_async('submitter_id' => @submitter.id, 'is_last' => is_last)
-      elsif normalized_params[:send_email] || normalized_params[:send_sms]
-        Submitters.send_signature_requests([@submitter])
+      ActiveRecord.after_all_transactions_commit do
+        if @submitter.completed_at?
+          ProcessSubmitterCompletionJob.perform_async('submitter_id' => @submitter.id, 'is_last' => is_last)
+        elsif normalized_params[:send_email] || normalized_params[:send_sms]
+          Submitters.send_signature_requests([@submitter])
+        end
+
+        SearchEntries.enqueue_reindex(@submitter)
       end
-
-      SearchEntries.enqueue_reindex(@submitter)
 
       render json: Submitters::SerializeForApi.call(@submitter, with_template: false, with_urls: true,
                                                                 with_events: false, params:)
