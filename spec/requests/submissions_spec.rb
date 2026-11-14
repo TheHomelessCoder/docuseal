@@ -378,6 +378,7 @@ describe 'Submission API' do
 
     {
       id: submission.id,
+      bennett_atomic_signing_expiry: true,
       name: submission.name,
       source: 'link',
       submitters_order: 'random',
@@ -438,6 +439,7 @@ describe 'Submission API' do
 
     {
       id: submission.id,
+      bennett_atomic_signing_expiry: true,
       name: submission.name,
       source: 'link',
       status: 'pending',

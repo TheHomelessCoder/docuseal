@@ -1,11 +1,17 @@
 # frozen_string_literal: true
+
 # Modified by Bennett Legal on 2026-11-01: enforce upstream recipient-order authorization before mutations.
+# Modified by Bennett Legal on 2026-11-13: serialize decline with API expiry.
+# Modified by Bennett Legal on 2026-11-13: defer decline mail and webhooks until commit.
 
 class SubmitFormDeclineController < ApplicationController
+  include BennettSubmissionLock
+
   skip_before_action :authenticate_user!
   skip_authorization_check
 
   before_action :load_submitter
+  around_action :with_bennett_submission_lock, only: :create
 
   def create
     return redirect_to submit_form_path(@submitter.slug) if declining_disabled? ||
@@ -28,12 +34,14 @@ class SubmitFormDeclineController < ApplicationController
 
     user = @submitter.submission.created_by_user || @submitter.template.author
 
-    if Users.send_emails?(user) &&
-       user.user_configs.find_by(key: UserConfig::RECEIVE_DECLINED_EMAIL)&.value != false
-      SubmitterMailer.declined_email(@submitter, user).deliver_later!
-    end
+    ActiveRecord.after_all_transactions_commit do
+      if Users.send_emails?(user) &&
+         user.user_configs.find_by(key: UserConfig::RECEIVE_DECLINED_EMAIL)&.value != false
+        SubmitterMailer.declined_email(@submitter, user).deliver_later!
+      end
 
-    WebhookUrls.enqueue_events(@submitter, 'form.declined')
+      WebhookUrls.enqueue_events(@submitter, 'form.declined')
+    end
 
     redirect_to submit_form_path(@submitter.slug)
   end

@@ -1,7 +1,11 @@
 # frozen_string_literal: true
+
 # Modified by Bennett Legal on 2026-11-01: enforce upstream recipient-order authorization before mutations.
+# Modified by Bennett Legal on 2026-11-13: serialize signing with API expiry.
 
 class SubmitFormController < ApplicationController
+  include BennettSubmissionLock
+
   layout 'form'
 
   around_action :with_browser_locale, only: %i[show completed success delegated]
@@ -9,6 +13,7 @@ class SubmitFormController < ApplicationController
   skip_authorization_check
 
   before_action :load_submitter, only: %i[show update completed]
+  around_action :with_bennett_submission_lock, only: :update
   before_action :maybe_render_not_found_for_search_bot, only: %i[show completed]
   before_action :maybe_redirect_delegated, only: %i[show completed]
   before_action :maybe_render_locked_page, only: :show
