@@ -1,9 +1,15 @@
 # frozen_string_literal: true
+
 # Modified by Bennett Legal on 2026-11-01: enforce upstream recipient-order authorization before mutations.
+# Modified by Bennett Legal on 2026-11-13: serialize invitation completion with API expiry.
 
 class SubmitFormInviteController < ApplicationController
+  include BennettSubmissionLock
+
   skip_before_action :authenticate_user!
   skip_authorization_check
+
+  around_action :with_bennett_submission_lock, only: :create
 
   def create
     @submitter = Submitter.find_by!(slug: params[:submit_form_slug])

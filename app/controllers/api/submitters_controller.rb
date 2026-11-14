@@ -1,9 +1,14 @@
 # frozen_string_literal: true
 
+# Modified by Bennett Legal on 2026-11-13: serialize API signing with expiry and recheck lifecycle/order.
+
 module Api
   class SubmittersController < ApiBaseController
+    include BennettSubmissionLock
+
     load_and_authorize_resource :submitter
 
+    around_action :with_bennett_submission_lock, only: :update
     before_action :maybe_return_submitter_error, only: :update
 
     def index
@@ -101,6 +106,16 @@ module Api
     private
 
     def maybe_return_submitter_error
+      if @submitter.submission.expired?
+        return render json: { error: 'Submission has expired.' }, status: :unprocessable_content
+      end
+
+      if submitter_params[:completed] &&
+         !Submitters::AuthorizedForForm.pass_submitters_order?(@submitter)
+        return render json: { error: 'Previous submitters have not completed the submission.' },
+                      status: :unprocessable_content
+      end
+
       if @submitter.completed_at? || @submitter.submission.completed_at?
         return render json: { error: 'Submitter has already completed the submission.' }, status: :unprocessable_content
       end

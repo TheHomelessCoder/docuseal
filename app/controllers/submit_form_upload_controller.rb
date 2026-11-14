@@ -1,11 +1,15 @@
 # frozen_string_literal: true
+
 # Modified by Bennett Legal on 2026-11-01: enforce upstream recipient-order authorization before mutations.
+# Modified by Bennett Legal on 2026-11-13: serialize signature attachments with API expiry.
 
 class SubmitFormUploadController < ActionController::API
+  include BennettSubmissionLock
   include ActionController::Cookies
   include ActiveStorage::SetCurrent
 
   before_action :load_submitter
+  around_action :with_bennett_submission_lock, only: :create
   before_action :authorize_upload!
 
   COOKIE_STORE_LIMIT = 10

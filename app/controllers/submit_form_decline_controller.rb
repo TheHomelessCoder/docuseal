@@ -1,11 +1,16 @@
 # frozen_string_literal: true
+
 # Modified by Bennett Legal on 2026-11-01: enforce upstream recipient-order authorization before mutations.
+# Modified by Bennett Legal on 2026-11-13: serialize decline with API expiry.
 
 class SubmitFormDeclineController < ApplicationController
+  include BennettSubmissionLock
+
   skip_before_action :authenticate_user!
   skip_authorization_check
 
   before_action :load_submitter
+  around_action :with_bennett_submission_lock, only: :create
 
   def create
     return redirect_to submit_form_path(@submitter.slug) if declining_disabled? ||

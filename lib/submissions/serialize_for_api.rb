@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Modified by Bennett Legal on 2026-11-13: advertise atomic signing/expiry support on submission responses.
+
 module Submissions
   module SerializeForApi
     SERIALIZE_PARAMS = {
@@ -26,6 +28,7 @@ module Submissions
 
       json = submission.as_json(SERIALIZE_PARAMS)
 
+      json['bennett_atomic_signing_expiry'] = true
       json['variables'] = (submission.variables || {}).as_json
       json['created_by_user'] ||= nil
 

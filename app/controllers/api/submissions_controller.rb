@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Modified by Bennett Legal on 2026-11-13: serialize expiry with signing and support unsigned-only expiry.
+
 module Api
   class SubmissionsController < ApiBaseController
     SUBMISSION_COLUMNS = %i[id name slug source submitters_order expire_at completed_at created_at updated_at
@@ -105,9 +107,19 @@ module Api
     end
 
     def update
-      @submission = assign_submission_attrs(@submission, submission_params)
+      attrs = submission_params
 
-      @submission.save!
+      @submission.with_lock do
+        if attrs[:bennett_unsigned_only].in?([true, 'true']) &&
+           (@submission.completed_at? || @submission.submitters.where.not(completed_at: nil)
+                                                    .or(@submission.submitters.where.not(declined_at: nil)).exists?)
+          return render json: { error: 'BENNETT_UNSIGNED_EXPIRY_REFUSED' }, status: :conflict
+        end
+
+        @submission = assign_submission_attrs(@submission, attrs)
+
+        @submission.save!
+      end
 
       if @submission.saved_change_to_archived_at? && @submission.archived_at?
         WebhookUrls.enqueue_events(@submission, 'submission.archived')
@@ -153,7 +165,7 @@ module Api
     def submission_params
       submission_params = params.key?(:submission) ? params.require(:submission) : params
 
-      submission_params.permit(:name, :expire_at, :archived, :archived_at)
+      submission_params.permit(:name, :expire_at, :archived, :archived_at, :bennett_unsigned_only)
     end
 
     def maybe_return_template_error

@@ -75,6 +75,12 @@ The production server deploys the newest `verified-*` image with `host.py update
 - **Smoke test:** the artifact `smoke-test-<run>` has `results.json`, screenshots and the stack's logs. `template representation matches the pinned one` failing means DocuSeal now returns templates differently than the version JUD enrolled its templates on; every approved template's pinned hash in JUD (`LIVE_TEMPLATE_DRIFT`) would drift, so update JUD before `ci/expected/template-projection.json`. The pinned file was recorded from the production image (`bennett-docuseal@sha256:e2dc9ab7…`, DocuSeal 3.3.4) on 2026-11-03.
 - **Trivy:** take the fix (often it is already in the next upstream release), or add a scoped, expiring entry to `ci/trivyignore.yaml` with the reason.
 
+## Atomic signing and unsigned expiry
+
+Submission reads expose `bennett_atomic_signing_expiry: true` in this build. JUD can send `PUT /api/submissions/:id` with `expire_at` and `bennett_unsigned_only: true`; the update returns HTTP 409 with `{"error":"BENNETT_UNSIGNED_EXPIRY_REFUSED"}` if any recipient has completed or declined, without applying any requested changes. Without that flag, ordinary expiry retains its existing behavior. Both modes share the submission row lock with public signer writes and API completion, and those writes recheck their lifecycle and signing order after acquiring the lock.
+
+`bundle exec rspec spec/requests/bennett_atomic_signing_expiry_spec.rb` tests actual commits on separate PostgreSQL connections. It waits for `pg_blocking_pids` to establish each interleaving: signing commits first and unsigned expiry refuses, or expiry commits first and stale completion, value, decline, API completion, invitation, signature upload/prefill and delegation requests cannot write. The spec also checks the capability on a submission read and ordinary expiry compatibility. The standard push CI runs this spec; it requires PostgreSQL and the complete Rails test bundle.
+
 ## JUD document reference
 
 With **Add signature ID to the documents** enabled, newly generated JUD agreement previews and results show `DocuSeal Document ID: …` in the upper-left margin of every page. The 8-point header uses the native per-submission reference, so it agrees with the existing footer and audit reference and remains stable across signing stages. Separate agreements have separate references. A PDF metadata marker prevents duplicate headers and rejects a mismatched reference.
