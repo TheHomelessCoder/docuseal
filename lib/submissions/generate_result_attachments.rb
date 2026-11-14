@@ -711,7 +711,13 @@ module Submissions
             text_params = { font:, fill_color:, font_size: }
             text_params[:line_height] = text_params[:font_size] * (FONTS_LINE_HEIGHT[font_name] || 1)
 
-            text = HexaPDF::Layout::TextFragment.create(value.tr("\u00A0", ' '), **text_params)
+            text_value = value.tr("\u00A0", ' ')
+            text = if BennettRetainerNameFit.applies?(submission, field)
+                     BennettRetainerNameFit.fit(text_value, text_params, layouter, area['w'] * width,
+                                                area['h'] * height)
+                   else
+                     HexaPDF::Layout::TextFragment.create(text_value, **text_params)
+                   end
 
             lines = layouter.fit([text], area['w'] * width, height).lines
             box_height = lines.sum(&:height)
