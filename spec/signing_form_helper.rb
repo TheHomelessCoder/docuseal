@@ -4,50 +4,52 @@ module SigningFormHelper
   module_function
 
   def draw_canvas
-    page.execute_script <<~JS
-      const canvas = document.getElementsByTagName('canvas')[0];
-      const rect = canvas.getBoundingClientRect();
+    Capybara.using_wait_time(10) do
+      page.evaluate_async_script <<~JS
+        const done = arguments[arguments.length - 1];
+        const canvas = document.getElementsByTagName('canvas')[0];
+        const rect = canvas.getBoundingClientRect();
 
-      const startX = rect.left + 50;
-      const startY = rect.top + 100;
+        const startX = rect.left + 50;
+        const startY = rect.top + 100;
 
-      const amplitude = 20;
-      const wavelength = 30;
-      const length = 300;
+        const amplitude = 20;
+        const wavelength = 30;
+        const length = 300;
 
-      function dispatchPointerEvent(type, x, y) {
-        const event = new PointerEvent(type, {
-          pointerId: 1,
-          pointerType: 'pen',
-          isPrimary: true,
-          clientX: x,
-          clientY: y,
-          bubbles: true,
-          pressure: 0.5
-        });
+        function dispatchPointerEvent(type, x, y) {
+          const event = new PointerEvent(type, {
+            pointerId: 1,
+            pointerType: 'pen',
+            isPrimary: true,
+            clientX: x,
+            clientY: y,
+            bubbles: true,
+            pressure: 0.5
+          });
 
-        canvas.dispatchEvent(event);
-      }
-
-      dispatchPointerEvent('pointerdown', startX, startY);
-
-      let x = 0;
-      function drawStep() {
-        if (x > length) {
-          dispatchPointerEvent('pointerup', startX + x, startY);
-          return;
+          canvas.dispatchEvent(event);
         }
 
-        const y = startY + amplitude * Math.sin((x / wavelength) * 2 * Math.PI);
-        dispatchPointerEvent('pointermove', startX + x, y);
-        x += 5;
-        requestAnimationFrame(drawStep);
-      }
+        dispatchPointerEvent('pointerdown', startX, startY);
 
-      drawStep();
-    JS
+        let x = 0;
+        function drawStep() {
+          if (x > length) {
+            dispatchPointerEvent('pointerup', startX + x, startY);
+            done(true);
+            return;
+          }
 
-    sleep 0.1
+          const y = startY + amplitude * Math.sin((x / wavelength) * 2 * Math.PI);
+          dispatchPointerEvent('pointermove', startX + x, y);
+          x += 5;
+          requestAnimationFrame(drawStep);
+        }
+
+        drawStep();
+      JS
+    end
   end
 
   def field_value(submitter, field_name)
